@@ -1,40 +1,115 @@
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import { z } from 'zod';
-const { pool } = require('../../db');
+import speakeasy from 'speakeasy';
+import { pool } from '../config/dbconfig.js';
+import { validateEmail, validateTotpToken, sanitizeString } from '../utils/validation.js';
+import type { 
+  LoginRequest, 
+  LoginResponse, 
+  User,
+  UserResponse,
+  ApiResponse 
+} from '../types/types.js';
 
 const router = Router();
 
-const loginSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(12),
-});
+interface LoginRequestBody extends Request {
+  body: LoginRequest;
+}
 
-router.post('/login', async (req, res) => {
-  const parse = loginSchema.safeParse(req.body);
-  if (!parse.success) {
-    res.status(400).json({ message: 'Invalid login credentials' });
-    return ;
-  }
-
-  const { email, password } = parse.data;
-
+router.post('/login', async (req: LoginRequestBody, res: Response<LoginResponse>): Promise<void> => {
   try {
-    const result = await pool.query('SELECT id, name, email, password FROM users WHERE email = $1', [email]);
+    const { email, password, totpToken } = req.body;
 
-    const user = result.rows[0];
-    const hashedPassword = user?.password ?? '$2b$10$invalidHashStringToTimeEqualize';
+    // Input validation
+    if (!validateEmail(email)) {
+      res.status(400).json({ 
+        message: 'Please provide a valid email address' 
+      });
+      return;
+    }
+
+    if (!password || typeof password !== 'string' || password.length < 1) {
+      res.status(400).json({ 
+        message: 'Password is required' 
+      });
+      return;
+    }
+
+    const sanitizedEmail = sanitizeString(email).toLowerCase();
+
+    // Get user from database
+    const result = await pool.query(
+      'SELECT id, name, email, password, secret FROM users WHERE email = $1', 
+      [sanitizedEmail]
+    );
+
+    const user = result.rows[0] as User | undefined;
+    
+    // Use a dummy hash for timing attack protection
+    const hashedPassword = user?.password ?? '$2b$12$invalidHashStringToTimeEqualize';
     const match = await bcrypt.compare(password, hashedPassword);
 
     if (!match || !user) {
-        res.status(400).json({ message: 'Invalid email or password' });
-      return ;
+      res.status(401).json({ message: 'Invalid email or password' });
+      return;
     }
 
-    const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET!, { expiresIn: '1h' });
+    // Check if 2FA is required
+    if (user.secret) {
+      if (!totpToken) {
+        res.status(200).json({ 
+          requiresTwoFactor: true, 
+          message: 'Please provide your 2FA token' 
+        });
+        return;
+      }
 
-    res.json({ token });
+      // Validate 2FA token
+      if (!validateTotpToken(totpToken)) {
+        res.status(400).json({ 
+          message: 'Invalid 2FA token format' 
+        });
+        return;
+      }
+
+      const validTotp = speakeasy.totp.verify({
+        secret: user.secret,
+        encoding: 'base32',
+        token: totpToken,
+        window: 2,
+      });
+
+      if (!validTotp) {
+        res.status(401).json({ message: 'Invalid 2FA token' });
+        return;
+      }
+    }
+
+    // Generate JWT token
+    if (!process.env.JWT_SECRET) {
+      throw new Error('JWT_SECRET not configured');
+    }
+
+    const token = jwt.sign(
+      { id: user.id, email: user.email }, 
+      process.env.JWT_SECRET, 
+      { expiresIn: '1h' }
+    );
+
+    const userResponse: UserResponse = {
+      id: user.id,
+      name: user.name,
+      email: user.email
+    };
+
+    res.json({ 
+      token,
+      user: userResponse,
+      message: 'Login successful'
+    });
+
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ message: 'Internal server error' });
