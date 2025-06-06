@@ -57,14 +57,8 @@ const AppContent: React.FC = () => {
               </PublicRoute>
             }
           />
-          <Route
-            path="/verify/:userId"
-            element={
-              <PublicRoute>
-                <Verify />
-              </PublicRoute>
-            }
-          />
+          <Route path="/verify/:userUuid" element={<Verify />} />
+          
           <Route
             path="/dashboard"
             element={

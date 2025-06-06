@@ -1,10 +1,11 @@
 export interface User {
   id: string;
+  uuid: string; 
   name: string;
   email: string;
   password: string;
-  secret?: string | null;
-  temp_secret?: string | null;
+  secret: string; 
+  is_verified: boolean; 
   created_at: Date;
 }
 
@@ -15,7 +16,7 @@ export interface UserCreateInput {
 }
 
 export interface UserResponse {
-  id: string;
+  uuid: string;
   name: string;
   email: string;
 }
@@ -34,14 +35,14 @@ export interface LoginResponse {
 }
 
 export interface RegisterResponse {
-  id: string;
+  uuid: string;
   secret: string;
   qrCode: string;
   manualEntryKey: string;
 }
 
 export interface VerifyRequest {
-  userId: string;
+  uuid: string;
   token: string;
 }
 

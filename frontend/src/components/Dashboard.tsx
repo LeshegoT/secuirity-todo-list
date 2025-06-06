@@ -4,11 +4,11 @@ import { apiService } from '../services/apiService';
 import {
   ShieldCheckIcon,
   UserIcon,
-  ArrowRightOnRectangleIcon as LogoutIcon, // Using the new icon name for clarity
+  ArrowRightOnRectangleIcon as LogoutIcon, 
   CheckCircleIcon,
   XCircleIcon
 } from '@heroicons/react/24/outline';
-import '../App.css'; // Ensure App.css is imported for styles
+import '../App.css'; 
 
 
 const Dashboard: React.FC = () => {

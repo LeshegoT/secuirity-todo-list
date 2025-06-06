@@ -26,7 +26,6 @@ router.post('/register', async (req: RegisterRequest, res: Response<ApiResponse<
   try {
     const { name, email, password } = req.body;
 
-    // Input validation with custom error messages
     if (!validateName(name)) {
       res.status(400).json({ 
         message: 'Name must be between 1 and 100 characters' 
@@ -51,7 +50,6 @@ router.post('/register', async (req: RegisterRequest, res: Response<ApiResponse<
     const sanitizedName = sanitizeString(name);
     const sanitizedEmail = sanitizeString(email).toLowerCase();
 
-    // Check if user already exists
     const existing = await pool.query(
       'SELECT id FROM users WHERE email = $1', 
       [sanitizedEmail]
@@ -62,34 +60,32 @@ router.post('/register', async (req: RegisterRequest, res: Response<ApiResponse<
       return;
     }
 
-    // Hash password
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    // Generate 2FA secret
-    const tempSecret = speakeasy.generateSecret({
+    const secret = speakeasy.generateSecret({
       name: `2FA App (${sanitizedEmail})`,
       issuer: '2FA App'
     });
 
-    // Insert user into database
-    const result = await pool.query(
-      `INSERT INTO users (name, email, password, temp_secret, created_at)
-       VALUES ($1, $2, $3, $4, NOW()) RETURNING id`,
-      [sanitizedName, sanitizedEmail, hashedPassword, tempSecret.base32]
-    );
 
-    if (!result.rows[0]?.id) {
-      throw new Error('Failed to create user');
-    }
+      const result = await pool.query(
+        `INSERT INTO users (name, email, password, secret, is_verified, created_at)
+        VALUES ($1, $2, $3, $4, FALSE, NOW()) RETURNING uuid`,
+        [sanitizedName, sanitizedEmail, hashedPassword, secret.base32]
+      );
 
-    // Generate QR code
-    const qrCodeUrl = await QRCode.toDataURL(tempSecret.otpauth_url || '');
+      if (!result.rows[0]?.uuid) {
+        throw new Error('Failed to create user');
+      }
+
+
+    const qrCodeUrl = await QRCode.toDataURL(secret.otpauth_url || '');
 
     const responseData: RegisterResponse = {
-      id: result.rows[0].id,
-      secret: tempSecret.base32 || '',
+      uuid: result.rows[0].uuid,
+      secret: secret.base32 || '', 
       qrCode: qrCodeUrl,
-      manualEntryKey: tempSecret.base32 || ''
+      manualEntryKey: secret.base32 || ''
     };
 
     res.status(201).json({ data: responseData });

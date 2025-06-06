@@ -12,7 +12,7 @@ interface User {
   }
   
   interface RegisterResponse {
-    id: string;
+    uuid: string;
     secret: string;
     qrCode: string;
     manualEntryKey: string;
@@ -32,14 +32,12 @@ interface User {
     message?: string;
   }
   
-  // ApiResponse for generic API responses
   interface ApiResponse<T = any> {
     data?: T;
     message?: string;
     error?: string;
   }
   
-  // Helper function to handle fetch responses, including error handling
   async function handleResponse<T>(response: Response): Promise<T> {
     const contentType = response.headers.get('content-type');
     let data: any;
@@ -142,12 +140,12 @@ interface User {
       });
     }
   
-    async verify(userId: string, token: string): Promise<VerifyResponse> {
+    async verify(uuid: string, token: string): Promise<VerifyResponse> {
       return this.fetchWrapper('/verify', {
         method: 'POST',
-        body: JSON.stringify({ userId, token }),
+        body: JSON.stringify({ uuid, token }),
       });
-    }
+    }    
   
     async validate(token: string): Promise<ValidateResponse> {
       return this.fetchWrapper('/validate', {
