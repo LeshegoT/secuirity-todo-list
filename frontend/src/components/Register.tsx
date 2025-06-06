@@ -64,7 +64,7 @@ const Register: React.FC = () => {
       const result = await register(formData.name, formData.email, formData.password);
 
       if (result.success && result.data) {
-        navigate(`/verify/${result.data.id}`, {
+        navigate(`/verify/${result.data.uuid}`, {
           state: {
             registrationData: result.data,
             email: formData.email

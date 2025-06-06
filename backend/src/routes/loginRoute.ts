@@ -93,13 +93,13 @@ router.post('/login', async (req: LoginRequestBody, res: Response<LoginResponse>
     }
 
     const token = jwt.sign(
-      { id: user.id, email: user.email }, 
+      { uuid: user.uuid, email: user.email }, 
       process.env.JWT_SECRET, 
       { expiresIn: '1h' }
     );
 
     const userResponse: UserResponse = {
-      id: user.id,
+      uuid: user.uuid,
       name: user.name,
       email: user.email
     };

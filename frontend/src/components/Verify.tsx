@@ -6,7 +6,7 @@ import '../App.css'; // Ensure App.css is imported for styles
 
 interface LocationState {
   registrationData?: {
-    id: string;
+    uuid: string;
     secret: string;
     qrCode: string;
     manualEntryKey: string;
@@ -15,7 +15,7 @@ interface LocationState {
 }
 
 const Verify: React.FC = () => {
-  const { userId } = useParams<{ userId: string }>();
+  const { userUuid } = useParams<{ userUuid: string }>();
   const location = useLocation();
   const navigate = useNavigate();
   const { verify } = useAuth();
@@ -30,20 +30,20 @@ const Verify: React.FC = () => {
   const userEmail = state?.email;
 
   useEffect(() => {
-    if (!userId || !registrationData) {
+    if (!userUuid|| !registrationData) {
       navigate('/register');
     }
-  }, [userId, registrationData, navigate]);
+  }, [userUuid, registrationData, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!userId) return;
+    if (!userUuid) return;
 
     setError('');
     setLoading(true);
 
     try {
-      const result = await verify(userId, token);
+      const result = await verify(userUuid, token);
 
       if (result.success) {
         // Show success message and redirect to login
@@ -68,7 +68,7 @@ const Verify: React.FC = () => {
     setToken(value);
   };
 
-  if (!registrationData || !userId) {
+  if (!registrationData || !userUuid) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">

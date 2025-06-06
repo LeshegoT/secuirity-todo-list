@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import speakeasy from 'speakeasy';
 import { pool } from '../config/dbconfig.js';
-import { validateUserId, validateTotpToken } from '../utils/validation.js';
+import { validateUuid, validateTotpToken } from '../utils/validation.js';
 import type { VerifyRequest, ApiResponse } from '../types/types.js';
 
 const router = Router();
@@ -12,64 +12,58 @@ interface VerifyRequestBody extends Request {
 
 router.post('/verify', async (req: VerifyRequestBody, res: Response<ApiResponse<{ verified: boolean }>>): Promise<void> => {
   try {
-    const { userId, token } = req.body;
+    const { uuid, token } = req.body;
 
-    // Input validation
-    if (!validateUserId(userId)) {
-      res.status(400).json({ 
-        message: 'Invalid user ID format' 
-      });
+    if (!validateUuid(uuid)) {
+      res.status(400).json({ message: 'Invalid UUID format' });
       return;
     }
-    
 
     if (!validateTotpToken(token)) {
-      res.status(400).json({ 
-        message: 'Token must be 6 digits' 
-      });
+      res.status(400).json({ message: 'Token must be 6 digits' });
       return;
     }
 
-    // Get user's temporary secret
     const result = await pool.query(
-      'SELECT temp_secret FROM users WHERE id = $1 AND temp_secret IS NOT NULL', 
-      [userId]
+      'SELECT id, secret, is_verified FROM users WHERE uuid = $1 AND secret IS NOT NULL',
+      [uuid]
     );
 
-    if (!result.rowCount || result.rowCount === 0) {
-      res.status(404).json({ 
-        message: 'User not found or already verified' 
-      });
+    if (!result.rowCount || result.rows.length === 0) {
+      res.status(404).json({ message: 'User not found or 2FA not set up' });
       return;
     }
 
-    const tempSecret = result.rows[0].temp_secret as string;
+    if (result.rows[0].is_verified) {
+      res.status(400).json({ message: 'User already verified' });
+      return;
+    }
 
-    // Verify TOTP token
+    const { id, secret } = result.rows[0];
+
     const verified = speakeasy.totp.verify({
-      secret: tempSecret,
+      secret,
       encoding: 'base32',
       token,
-      window: 2, // Allow some time drift
+      window: 2
     });
 
     if (verified) {
-      // Move temp_secret to secret and clear temp_secret
       await pool.query(
-        'UPDATE users SET secret = temp_secret, temp_secret = NULL WHERE id = $1', 
-        [userId]
+        'UPDATE users SET is_verified = TRUE WHERE id = $1',
+        [id]
       );
-      
-      res.json({ 
+
+      res.json({
         data: { verified: true },
-        message: '2FA setup completed successfully' 
+        message: '2FA verification successful'
       });
       return;
     }
 
-    res.json({ 
+    res.status(400).json({
       data: { verified: false },
-      message: 'Invalid token. Please try again.' 
+      message: 'Invalid token. Please try again.'
     });
 
   } catch (err) {
