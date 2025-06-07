@@ -54,7 +54,7 @@ resource "aws_elastic_beanstalk_application_version" "todo_app_initial" {
 resource "aws_elastic_beanstalk_environment" "todo_env" {
   name                = var.env_name
   application         = aws_elastic_beanstalk_application.todo_app.name
-  solution_stack_name = "64bit Amazon Linux 2023 v6.5.2 running Node.js 22"
+  solution_stack_name = "64bit Amazon Linux 2023 v6.5.2 running Node.js 18"
   tier                = "WebServer"
   version_label       = aws_elastic_beanstalk_application_version.todo_app_initial.name
 
@@ -212,9 +212,11 @@ resource "aws_elastic_beanstalk_environment" "todo_env" {
     value     = "ELBSecurityPolicy-2016-08"
   }
 
-  # ALB HTTP Listener Configuration with Redirect to HTTPS (Revised)
+  # ALB HTTP Listener Configuration (handled by .ebextensions for redirect)
+  # Elastic Beanstalk will create a default forward rule for this,
+  # which will then be overwritten by the .ebextensions config.
   setting {
-    namespace = "aws:elbv2:listener:80" # Explicitly referring to the HTTP listener
+    namespace = "aws:elbv2:listener:80"
     name      = "ListenerEnabled"
     value     = "true"
   }
@@ -223,24 +225,6 @@ resource "aws_elastic_beanstalk_environment" "todo_env" {
     namespace = "aws:elbv2:listener:80"
     name      = "Protocol"
     value     = "HTTP"
-  }
-
-  setting {
-    namespace = "aws:elbv2:listener:80"
-    name      = "RedirectEnabled" # Enable redirection
-    value     = "true"
-  }
-
-  setting {
-    namespace = "aws:elbv2:listener:80"
-    name      = "RedirectPort" # Redirect to port 443 (HTTPS)
-    value     = "443"
-  }
-
-  setting {
-    namespace = "aws:elbv2:listener:80"
-    name      = "RedirectStatusCode" # Use a 301 Moved Permanently redirect
-    value     = "HTTP_301"
   }
 
   # Health Check Path Configuration
