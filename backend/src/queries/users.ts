@@ -1,6 +1,6 @@
-import { pool } from "../config/dbconfig";
+import { pool } from "../config/dbconfig.js";
 
-export async function getUserIdByUUID(uuid: string): Promise<number | null> {
+export async function getUserId(uuid: string): Promise<number | null> {
   const result = await pool.query<{ id: number }>(
     `SELECT id FROM users WHERE uuid = $1`,
     [uuid]

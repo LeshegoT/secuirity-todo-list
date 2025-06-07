@@ -4,6 +4,7 @@ import { pool } from '../config/dbconfig.js';
 import { authenticateToken } from '../middlewares/auth.js';
 import { validateTotpToken } from '../utils/validation.js';
 import type { ValidateRequest, ApiResponse } from '../types/types.js';
+import { getUserId } from '../queries/users.js';
 
 const router = Router();
 
@@ -14,14 +15,24 @@ interface ValidateRequestBody extends Request {
 router.post('/validate', authenticateToken, async (req: ValidateRequestBody, res: Response<ApiResponse<{ validated: boolean }>>): Promise<void> => {
   try {
     const { token } = req.body;
-    const userId = req.user?.id;
+    const uuid = req.user?.uuid;
+    let userId;
+    
 
-    if (!userId) {
+    if (!uuid) {
       res.status(401).json({ message: 'User not authenticated' });
       return;
     }
+    else {
+     userId = await getUserId(uuid);
+      if(!userId){
+          res.status(401).json({ message: 'User not authenticated' });
+        return;
+      }
 
-    // Input validation
+    }
+
+
     if (!validateTotpToken(token)) {
       res.status(400).json({ 
         message: 'Token must be 6 digits' 
@@ -29,7 +40,7 @@ router.post('/validate', authenticateToken, async (req: ValidateRequestBody, res
       return;
     }
 
-    // Get user's secret
+
     const result = await pool.query(
       'SELECT secret FROM users WHERE id = $1 AND secret IS NOT NULL', 
       [userId]
@@ -44,7 +55,7 @@ router.post('/validate', authenticateToken, async (req: ValidateRequestBody, res
 
     const secret = result.rows[0].secret as string;
 
-    // Validate TOTP token
+ 
     const validated = speakeasy.totp.verify({
       secret,
       encoding: 'base32',
