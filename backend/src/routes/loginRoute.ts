@@ -39,15 +39,13 @@ router.post('/login', async (req: LoginRequestBody, res: Response<LoginResponse>
 
     const sanitizedEmail = sanitizeString(email).toLowerCase();
 
-    // Get user from database
     const result = await pool.query(
-      'SELECT id, name, email, password, secret FROM users WHERE email = $1', 
+      'SELECT id, uuid, name, email, password, secret FROM users WHERE email = $1', 
       [sanitizedEmail]
     );
 
     const user = result.rows[0] as User | undefined;
     
-    // Use a dummy hash for timing attack protection
     const hashedPassword = user?.password ?? '$2b$12$invalidHashStringToTimeEqualize';
     const match = await bcrypt.compare(password, hashedPassword);
 
@@ -56,7 +54,7 @@ router.post('/login', async (req: LoginRequestBody, res: Response<LoginResponse>
       return;
     }
 
-    // Check if 2FA is required
+
     if (user.secret) {
       if (!totpToken) {
         res.status(200).json({ 
@@ -66,7 +64,7 @@ router.post('/login', async (req: LoginRequestBody, res: Response<LoginResponse>
         return;
       }
 
-      // Validate 2FA token
+  
       if (!validateTotpToken(totpToken)) {
         res.status(400).json({ 
           message: 'Invalid 2FA token format' 
@@ -87,7 +85,7 @@ router.post('/login', async (req: LoginRequestBody, res: Response<LoginResponse>
       }
     }
 
-    // Generate JWT token
+ 
     if (!process.env.JWT_SECRET) {
       throw new Error('JWT_SECRET not configured');
     }
@@ -97,6 +95,7 @@ router.post('/login', async (req: LoginRequestBody, res: Response<LoginResponse>
       process.env.JWT_SECRET, 
       { expiresIn: '1h' }
     );
+    
 
     const userResponse: UserResponse = {
       uuid: user.uuid,

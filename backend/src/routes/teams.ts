@@ -1,17 +1,28 @@
 import { createTeam, getTeamsForUser } from "../queries/teams.js";
 import { Router } from "express";
+import { getUserId } from "../queries/users.js";
+import { RequestWithUser } from "../types/types.js";
 
 const router = Router();
 
-router.get("/mine", async (req, res, next) => {
+router.get("/mine", async (req: RequestWithUser, res, next) => {
   try {
-    //Need way to get logged in user's uuid
-    // const userId = await getUserIdByUUID(uuid)
-    const teams = await getTeamsForUser(1);
-    res.status(200).json({
-      status: "success",
-      data: { teams: teams || [] },
-    });
+    const user = req.user;
+    if (!user || !user.uuid) {
+      res.status(401).json({ status: "error", message: "Unauthorized" });
+    } else {
+      const userId = await getUserId(user.uuid);
+      if (!userId) {
+        res.status(401).json({ status: "error", message: "Unauthorized" });
+      } else {
+        const teams = await getTeamsForUser(userId);
+
+        res.status(200).json({
+          status: "success",
+          data: { teams: teams || [] },
+        });
+      }
+    }
   } catch (error) {
     next(error);
   }
