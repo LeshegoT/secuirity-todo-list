@@ -1,6 +1,5 @@
-import { createTeam, getTeamsForUser } from "../queries/teams";
+import { createTeam, getTeamsForUser } from "../queries/teams.js";
 import { Router } from "express";
-import { getUserIdByUUID } from "../queries/users";
 
 const router = Router();
 
