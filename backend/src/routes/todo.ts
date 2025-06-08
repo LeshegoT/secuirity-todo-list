@@ -2,8 +2,9 @@ import { Router } from "express";
 import {createTodo, getTodos, updateTodo} from "../queries/todo";
 import {CreateTodoPayload} from "../queries/models/create-todo-payload";
 import {UpdateTodoPayload} from "../queries/models/update-todo-payload";
-import {UnauthorizedError} from "./errors/UnauthorizedError";
-import {InvalidIdError} from "./errors/InvalidIdError";
+import {NotFoundError, UnauthorizedError} from "./errors/customError";
+import {InvalidIdError} from "./errors/customError";
+import {getUser} from "../queries/users";
 
 const router = Router();
 
@@ -39,24 +40,44 @@ const covertToNumberId = (stringId: string, details: string, mustBeDefined : boo
   return numberId;
 }
 
-router.get('/todos', async (req, res) => {
-  try {
-    // currentUserId hardcoded for now
-    const currentUserId = 1;
-    // const usersRoles = await getUserRoles(currentUserId);
-    // userRoles hardcoded for now
-    const userRoles = ["Team Lead"];
+const getUserFromUuid = async (userUuid : string | undefined, errorMessage: string | undefined = undefined, isCurrentUser : boolean = false) => {
+  if (!userUuid) {
+    if(isCurrentUser)
+    {
+      throw new UnauthorizedError("Unauthorized", "The user has not been authorized");
+    }
 
-    isUserAuthorised(userRoles, 'You are not authorized to retrieve todos.');
+    throw new NotFoundError("UserNotFound", errorMessage ? errorMessage : "User could not be found.");
+  }
+
+  const user = await getUser(userUuid);
+  if (!user) {
+    if(isCurrentUser)
+    {
+      throw new UnauthorizedError("Unauthorized", "The user has not been authorized");
+    }
+
+    throw new NotFoundError("UserNotFound", errorMessage ? errorMessage : "User could not be found.");
+  }
+
+  return user
+}
+
+router.get('/', async (req, res) => {
+  try {
+    const currentUser = await getUserFromUuid(req.user?.uuid)
+    isUserAuthorised(currentUser.userRoles, 'You are not authorized to retrieve todos.');
 
     const id = covertToNumberId(req.query.id as string, 'Invalid Todo ID provided.' );
     const teamId = covertToNumberId(req.query.teamId as string, 'Invalid Todo Team ID provided.');
-    let assignedToId = covertToNumberId(req.query.assignedToId as string, 'Invalid Todo Assigned To ID provided.');
     const statusId = covertToNumberId(req.query.statusId as string, 'Invalid Todo Status ID provided.' );
     const priorityId = covertToNumberId(req.query.priorityId as string, 'Invalid Todo Priority ID provided.' );
 
-    if (!isUserUnrestricted(userRoles) && (!assignedToId || assignedToId !== currentUserId)) {
-      assignedToId = currentUserId;
+    const assignedToUser = await getUserFromUuid(req.query.assignedToId as string, "Assigned to user does not exist");
+    let assignedToId = assignedToUser.id;
+
+    if (!isUserUnrestricted(currentUser.userRoles) && (!assignedToId || assignedToId !== currentUser.id)) {
+      assignedToId = currentUser.id;
     }
 
     const filters = {
@@ -71,11 +92,7 @@ router.get('/todos', async (req, res) => {
 
     return res.status(200).json(todos);
   } catch (error : any) {
-    if (error instanceof UnauthorizedError) {
-      return res.status(error.statusCode).json({ message: `${error.message}: ${error.details}` });
-    }
-
-    if (error instanceof InvalidIdError) {
+    if (error instanceof UnauthorizedError || error instanceof InvalidIdError || error instanceof NotFoundError) {
       return res.status(error.statusCode).json({ message: `${error.message}: ${error.details}` });
     }
 
@@ -85,20 +102,16 @@ router.get('/todos', async (req, res) => {
 
 router.get('/:id', async (req, res) => {
   try {
-    // currentUserId hardcoded for now
-    const currentUserId = 1;
-    // const usersRoles = await getUserRoles(currentUserId);
-    // userRoles hardcoded for now
-    const userRoles = ["Todo User"];
+    const currentUser = await getUserFromUuid(req.user?.uuid)
 
-    isUserAuthorised(userRoles, 'You are not authorized to retrieve todos.');
+    isUserAuthorised(currentUser.userRoles, 'You are not authorized to retrieve todos.');
 
     const id = covertToNumberId(req.params.id as string, 'Invalid Todo ID provided.', true );
 
     let assignedToId : number | undefined | null = null;
 
-    if (!isUserUnrestricted(userRoles)) {
-      assignedToId = currentUserId;
+    if (!isUserUnrestricted(currentUser.userRoles)) {
+      assignedToId = currentUser.id;
     }
 
     const filters = {
@@ -114,11 +127,7 @@ router.get('/:id', async (req, res) => {
 
     return res.status(200).json(todo);
   } catch (error : any) {
-    if (error instanceof UnauthorizedError) {
-      return res.status(error.statusCode).json({ message: `${error.message}: ${error.details}` });
-    }
-
-    if (error instanceof InvalidIdError) {
+    if (error instanceof UnauthorizedError || error instanceof InvalidIdError || error instanceof NotFoundError) {
       return res.status(error.statusCode).json({ message: `${error.message}: ${error.details}` });
     }
 
@@ -126,19 +135,15 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-router.post('/todos', async (req, res) => {
+router.post('/', async (req, res) => {
   try {
-    // currentUserId hardcoded for now
-    const currentUserId = 1;
-    // const usersRoles = await getUserRoles(currentUserId);
-    // userRoles hardcoded for now
-    const userRoles = ["Team Lead"];
+    const currentUser = await getUserFromUuid(req.user?.uuid)
 
-    isUserAuthorised(userRoles, 'You are not authorized to create todos.');
+    isUserAuthorised(currentUser.userRoles, 'You are not authorized to create todos.');
 
     const createTodoPayload: CreateTodoPayload = req.body;
 
-    createTodoPayload.createdBy = currentUserId;
+    createTodoPayload.createdBy = currentUser.id;
 
     const result = await createTodo(createTodoPayload);
 
@@ -150,26 +155,22 @@ router.post('/todos', async (req, res) => {
       return res.status(error.statusCode).json({ message: `${error.message}: ${error.details}` });
     }
 
-    return res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ message: error });
   }
 });
 
-router.put('/:id', async (req, res) => {
+router.patch('/:id', async (req, res) => {
   try {
-    // currentUserId hardcoded for now
-    const currentUserId = 1;
-    // const usersRoles = await getUserRoles(currentUserId);
-    // userRoles hardcoded for now
-    const userRoles = ["Team Lead"];
+    const currentUser = await getUserFromUuid(req.user?.uuid)
 
-    isUserAuthorised(userRoles, 'You are not authorized to update todos.');
+    isUserAuthorised(currentUser.userRoles, 'You are not authorized to update todos.');
 
     const id = covertToNumberId(req.params.id as string, 'Invalid Todo ID provided.', true);
 
     let assignedToId : number | undefined | null = null;
 
-    if (!isUserUnrestricted(userRoles)) {
-      assignedToId = currentUserId;
+    if (!isUserUnrestricted(currentUser.userRoles)) {
+      assignedToId = currentUser.id;
     }
 
     const filters = {
@@ -183,7 +184,7 @@ router.put('/:id', async (req, res) => {
       return res.status(404).json({ message: `There is no todo with id: ${id}.` });
     }
 
-    if (currentToDo.assignedToId !== currentUserId || currentToDo.createdBy !== currentUserId) {
+    if (currentToDo.assignedToId !== currentUser.id || currentToDo.createdBy !== currentUser.id) {
       return res.status(401).json({ message: `You are not authorized to update todo with id: ${id}.` });
     }
 
@@ -205,21 +206,17 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-router.put('/:id/deactivate', async (req, res) => {
+router.patch('/:id/deactivate', async (req, res) => {
   try {
-    // currentUserId hardcoded for now
-    const currentUserId = 1;
-    // const usersRoles = await getUserRoles(currentUserId);
-    // userRoles hardcoded for now
-    const userRoles = ["Team Lead"];
+    const currentUser = await getUserFromUuid(req.user?.uuid)
 
-    isUserAuthorised(userRoles, 'You are not authorized to deactivate todos.');
+    isUserAuthorised(currentUser.userRoles, 'You are not authorized to deactivate todos.');
 
     const id = covertToNumberId(req.params.id as string, 'Invalid Todo ID provided.', true);
 
     let assignedToId : number | undefined | null = null;
-    if (!isUserUnrestricted(userRoles)) {
-      assignedToId = currentUserId;
+    if (!isUserUnrestricted(currentUser.userRoles)) {
+      assignedToId = currentUser.id;
     }
 
     const filters = {
@@ -231,7 +228,7 @@ router.put('/:id/deactivate', async (req, res) => {
 
     if (!currentToDo) {
       return res.status(404).json({ message: `There is no todo with id: ${id}.` });
-    } else if (currentToDo.assignedToId !== currentUserId || currentToDo.createdBy !== currentUserId) {
+    } else if (currentToDo.assignedToId !== currentUser.id || currentToDo.createdBy !== currentUser.id) {
       return res.status(401).json({ message: `You are not authorized to update todo with id: ${id}.` });
     }
 

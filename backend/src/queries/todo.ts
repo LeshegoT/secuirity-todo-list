@@ -2,6 +2,8 @@ import {pool} from "../config/dbconfig";
 import {TodoResponse} from "./models/todo-response";
 import {CreateTodoPayload} from "./models/create-todo-payload";
 import {UpdateTodoPayload} from "./models/update-todo-payload";
+import {getUserId} from "./users";
+import {NotFoundError} from "../routes/errors/customError";
 
 export async function getTodos(
   filters: {
@@ -73,10 +75,8 @@ export async function getTodos(
   } else {
     sqlQuery += ';';
   }
-  console.log('sqlQuery', sqlQuery);
-  console.log('params', params);
+
   const result = await pool.query(sqlQuery, params);
-  console.log('result', result);
   return result.rows as TodoResponse[];
 }
 
@@ -91,7 +91,7 @@ export async function createTodo(createTodoPayload: CreateTodoPayload): Promise<
       created_at,
       created_by,
       description,
-      isActive
+      is_active
     )
     VALUES (
       $1,
@@ -114,12 +114,21 @@ export async function createTodo(createTodoPayload: CreateTodoPayload): Promise<
       created_at,
       created_by,
       description,
-      isActive;
+      is_active;
     `;
+
+  let assignedToId : number | null = null;
+  if (createTodoPayload.assignedToUuid) {
+    assignedToId = await getUserId(createTodoPayload.assignedToUuid);
+
+    if (!assignedToId) {
+      throw new NotFoundError("AssignToUserNotFound", "Assign To user does not exist");
+    }
+  }
 
   const params = [
       createTodoPayload.title,
-      createTodoPayload.assignedToId,
+      assignedToId,
       createTodoPayload.teamId,
       createTodoPayload.statusId,
       createTodoPayload.priorityId,
@@ -128,6 +137,7 @@ export async function createTodo(createTodoPayload: CreateTodoPayload): Promise<
   ];
 
   const result = await pool.query(sqlQuery, params);
+
   return result.rows[0] as TodoResponse;
 }
 
@@ -157,10 +167,19 @@ export async function updateTodo(id: number, updateTodoPayload: UpdateTodoPayloa
       isActive;
   `;
 
+  let assignedToId : number | null = null;
+  if (updateTodoPayload.assignedToUuid) {
+    assignedToId = await getUserId(updateTodoPayload.assignedToUuid);
+
+    if (!assignedToId) {
+      throw new NotFoundError("AssignToUserNotFound", "Assign To user does not exist");
+    }
+  }
+
   const params = [
     id,
     updateTodoPayload.title,
-    updateTodoPayload.assignedToId,
+    assignedToId,
     updateTodoPayload.teamId,
     updateTodoPayload.statusId,
     updateTodoPayload.priorityId,

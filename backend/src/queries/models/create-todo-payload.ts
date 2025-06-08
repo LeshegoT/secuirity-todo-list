@@ -1,6 +1,6 @@
 export interface CreateTodoPayload {
   title: string;
-  assignedToId: number | null;
+  assignedToUuid: string | null;
   teamId: number;
   statusId: number;
   priorityId: number;
