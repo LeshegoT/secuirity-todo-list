@@ -1,3 +1,8 @@
+import type { Request } from 'express';
+
+export interface RequestWithUser extends Request {
+  user?: JWTPayload;
+}
 export interface User {
   id: string;
   uuid: string; 
@@ -51,7 +56,7 @@ export interface ValidateRequest {
 }
 
 export interface JWTPayload {
-  id: string;
+  uuid: string;
   email: string;
   iat?: number;
   exp?: number;

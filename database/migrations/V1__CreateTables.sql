@@ -4,8 +4,8 @@ CREATE TABLE users (
     email VARCHAR(255) NOT NULL CONSTRAINT uq_users_email UNIQUE,
     name VARCHAR(100) NOT NULL CONSTRAINT uq_users_username UNIQUE,
     password VARCHAR(255) NOT NULL,
-    temp_secret  CHAR(64),
     created_at TIMESTAMP ,
+    is_verified BOOLEAN,
     uuid UUID DEFAULT gen_random_uuid() UNIQUE,
     secret  CHAR(64)
 );

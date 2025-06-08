@@ -9,6 +9,8 @@ import validateRoute from './routes/validateRoute.js';
 import loginRoute from './routes/loginRoute.js';
 import teamsRouter from './routes/teams.js';
 import todoRouter from './routes/todo.js'
+import prioritiesRouter from './routes/priorities.js';
+import { authenticateToken } from './middlewares/auth.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -17,9 +19,7 @@ const app: Application = express();
 
 app.use(express.json({ limit: '10mb' }));
 app.use(helmet());
-
 app.set('trust proxy', 1);
-
 
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, 
@@ -35,18 +35,18 @@ const authLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-
-app.use(express.static(path.join(__dirname, 'build')));
-
-
-
 app.use('/api', apiLimiter);
 app.use('/api/register', authLimiter);
 app.use('/api/login', authLimiter);
 app.use('/api/verify', authLimiter);
-app.use('/api/teams', teamsRouter);
 app.use('/api/todos', todoRouter);
+app.use('/api/teams', authenticateToken ,teamsRouter);
+app.use('/api/priorities', prioritiesRouter);
 
+app.use('/api', registerRoute);
+app.use('/api', verifyRoute);
+app.use('/api', validateRoute);
+app.use('/api', loginRoute);
 
 app.get('/api/health', (_req: Request, res: Response): void => {
   res.json({ 
@@ -61,19 +61,14 @@ app.get('/api', (_req: Request, res: Response): void => {
 });
 
 
-app.use('/api', registerRoute);
-app.use('/api', verifyRoute);
-app.use('/api', validateRoute);
-app.use('/api', loginRoute);
+app.use(express.static(path.join(__dirname, 'build')));
 
-
-app.get('*', (req: Request, res: Response): void => {
+app.get('*', (_req: Request, res: Response): void => {
   res.sendFile(path.join(__dirname, 'build', 'index.html'));
 });
 
 
-
-app.use((err: Error, req: Request, res: Response, next: NextFunction): void => {
+app.use((err: Error, _req: Request, res: Response, _next: NextFunction): void => {
   console.error('Unhandled error:', err);
   const message = process.env.NODE_ENV === 'production' 
     ? 'Internal server error' 

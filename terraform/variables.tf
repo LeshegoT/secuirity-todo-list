@@ -7,13 +7,13 @@ variable "aws_region" {
 variable "app_name" {
   description = "Name of the application."
   type        = string
-  default     = "todo-app"
+  default     = "todo-list-app"
 }
 
 variable "env_name" {
   description = "Name of the Elastic Beanstalk environment."
   type        = string
-  default     = "Production"
+  default     = "Production-todo"
 }
 
 variable "db_instance_class" {

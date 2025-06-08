@@ -1,5 +1,5 @@
 import { NewTeam, Team } from "../models/teams";
-import { pool } from "../config/dbconfig";
+import { pool } from "../config/dbconfig.js";
 
 export async function getTeamsForUser(userId: number): Promise<Team[]> {
   const response = await pool.query<Team>(
