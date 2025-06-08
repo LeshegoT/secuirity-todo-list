@@ -3,9 +3,7 @@ export interface UserResponse {
   uuid: string;
   name: string;
   email: string;
-  password: string;
-  secret: string;
-  is_verified: boolean;
-  created_at: Date;
+  isVerified: boolean;
+  createdAt: Date;
   userRoles: string[];
 }

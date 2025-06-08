@@ -1,7 +1,6 @@
 import { Router } from "express";
 import {createTodo, getTodos, updateTodo} from "../queries/todo";
-import {CreateTodoPayload} from "../queries/models/create-todo-payload";
-import {UpdateTodoPayload} from "../queries/models/update-todo-payload";
+import {CreateTodoPayload, UpdateTodoPayload, UserResponse} from "../queries/models/todo";
 import {NotFoundError, UnauthorizedError} from "./errors/customError";
 import {InvalidIdError} from "./errors/customError";
 import {getUser} from "../queries/users";
@@ -60,7 +59,7 @@ const getUserFromUuid = async (userUuid : string | undefined, errorMessage: stri
     throw new NotFoundError("UserNotFound", errorMessage ? errorMessage : "User could not be found.");
   }
 
-  return user
+  return user as UserResponse;
 }
 
 router.get('/', async (req, res) => {
@@ -73,8 +72,10 @@ router.get('/', async (req, res) => {
     const statusId = covertToNumberId(req.query.statusId as string, 'Invalid Todo Status ID provided.' );
     const priorityId = covertToNumberId(req.query.priorityId as string, 'Invalid Todo Priority ID provided.' );
 
-    const assignedToUser = await getUserFromUuid(req.query.assignedToId as string, "Assigned to user does not exist");
-    let assignedToId = assignedToUser.id;
+    const assignedToUser = req.query.assignedToUuid
+      ? await getUserFromUuid(req.query.assignedToUuid as string, "Assigned to user does not exist")
+      : null;
+    let assignedToId = assignedToUser ? assignedToUser.id : null;
 
     if (!isUserUnrestricted(currentUser.userRoles) && (!assignedToId || assignedToId !== currentUser.id)) {
       assignedToId = currentUser.id;
@@ -137,7 +138,7 @@ router.get('/:id', async (req, res) => {
 
 router.post('/', async (req, res) => {
   try {
-    const currentUser = await getUserFromUuid(req.user?.uuid)
+    const currentUser = await getUserFromUuid(req.user?.uuid);
 
     isUserAuthorised(currentUser.userRoles, 'You are not authorized to create todos.');
 
@@ -184,7 +185,7 @@ router.patch('/:id', async (req, res) => {
       return res.status(404).json({ message: `There is no todo with id: ${id}.` });
     }
 
-    if (currentToDo.assignedToId !== currentUser.id || currentToDo.createdBy !== currentUser.id) {
+    if (currentToDo.assignedToId !== currentUser.id && currentToDo.createdBy !== currentUser.id) {
       return res.status(401).json({ message: `You are not authorized to update todo with id: ${id}.` });
     }
 
@@ -228,7 +229,7 @@ router.patch('/:id/deactivate', async (req, res) => {
 
     if (!currentToDo) {
       return res.status(404).json({ message: `There is no todo with id: ${id}.` });
-    } else if (currentToDo.assignedToId !== currentUser.id || currentToDo.createdBy !== currentUser.id) {
+    } else if (currentToDo.assignedToId !== currentUser.id && currentToDo.createdBy !== currentUser.id) {
       return res.status(401).json({ message: `You are not authorized to update todo with id: ${id}.` });
     }
 

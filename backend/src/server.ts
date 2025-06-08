@@ -39,7 +39,7 @@ app.use('/api', apiLimiter);
 app.use('/api/register', authLimiter);
 app.use('/api/login', authLimiter);
 app.use('/api/verify', authLimiter);
-app.use('/api/todos', todoRouter);
+app.use('/api/todos', authenticateToken, todoRouter);
 app.use('/api/teams', authenticateToken ,teamsRouter);
 app.use('/api/priorities', prioritiesRouter);
 

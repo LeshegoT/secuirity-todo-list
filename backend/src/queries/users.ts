@@ -16,19 +16,19 @@ export async function getUser(uuid: string): Promise<UserResponse | null> {
        u.id,
        u.email,
        u.name,
-       u.created_at,
-       u.is_verified,
+       u.created_at AS "createdAt",
+       u.is_verified AS "isVerified",
        u.uuid,
-       ARRAY_AGG(r.name) AS userRoles
+       ARRAY_AGG(r.name) AS "userRoles"
     FROM
        users AS u
        LEFT JOIN
             user_roles AS ur ON u.id = ur.user_id
        LEFT JOIN
           roles AS r ON ur.role_id = r.id
+    WHERE uuid = $1
     GROUP BY
-       u.id, u.email, u.name, u.created_at, u.is_verified, u.uuid
-    WHERE uuid = $1;`;
+       u.id, u.email, u.name, u.created_at, u.is_verified, u.uuid;`;
 
   const params = [
     uuid
