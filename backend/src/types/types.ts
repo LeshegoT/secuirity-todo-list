@@ -2,7 +2,10 @@ import type { Request } from 'express';
 
 export interface RequestWithUser extends Request {
   user?: JWTPayload;
+  userId?: number; // Added for admin middleware
+  validatedUserId?: number; // Added for validation middleware
 }
+
 export interface User {
   id: string;
   uuid: string; 
@@ -12,6 +15,28 @@ export interface User {
   secret: string; 
   is_verified: boolean; 
   created_at: Date;
+}
+
+// Extended user interface with roles for admin operations
+export interface UserWithRoles {
+  id: number;
+  email: string;
+  name: string;
+  created_at: Date;
+  is_verified: boolean;
+  uuid: string;
+  roles: string[];
+}
+
+export interface Role {
+  id: number;
+  name: string;
+}
+
+export interface UserRole {
+  user_id: number;
+  role_id: number;
+  role_name: string;
 }
 
 export interface UserCreateInput {
@@ -78,4 +103,14 @@ export interface ApiResponse<T = unknown> {
   message?: string;
   data?: T;
   error?: string;
+}
+
+// Admin operation request types
+export interface RoleAssignmentRequest {
+  action: 'assign' | 'remove';
+  roleIds: number[];
+}
+
+export interface AccountLockRequest {
+  action: 'lock' | 'unlock';
 }
