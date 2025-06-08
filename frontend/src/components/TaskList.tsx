@@ -22,7 +22,7 @@ export default function TaskList({ todos, teams, currentUser, selectedTeam, stat
   const filteredTodos = selectedTeam
     ? todos.filter((todo) => todo.teamId === selectedTeam)
     : todos.filter((todo) =>
-        teams.some((team) => team.members.some((member) => member.id === currentUser.id) && team.id === todo.teamId),
+        teams.some((team) => team.members.some((member) => member.uuid === currentUser.uuid) && team.id === todo.teamId),
       )
 
   const handleAssignToSelf = (todoId: number) => {
@@ -45,8 +45,8 @@ export default function TaskList({ todos, teams, currentUser, selectedTeam, stat
     // Implement API call to delete task
   }
 
-  const handleAssignToUser = (todoId: number, userId: number) => {
-    console.log(`Assigning task ${todoId} to user ${userId}`)
+  const handleAssignToUser = (todoId: number, uuid: string) => {
+    console.log(`Assigning task ${todoId} to user ${uuid}`)
     // Implement API call to assign task to user
   }
 
