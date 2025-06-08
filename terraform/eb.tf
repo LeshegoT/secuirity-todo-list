@@ -1,4 +1,3 @@
-# Elastic Beanstalk Application
 resource "aws_elastic_beanstalk_application" "todo_app" {
   name        = var.app_name
   description = "Elastic Beanstalk application for ${var.app_name}"
@@ -19,8 +18,8 @@ resource "random_password" "jwt_secret_value" {
 }
 
 resource "aws_secretsmanager_secret" "todo_jwt_secret" {
-  name                  = "${var.app_name}/jwt_secret"
-  description           = "JWT secret for ${var.app_name} authentication"
+  name                    = "${var.app_name}/jwt_secret"
+  description             = "JWT secret for ${var.app_name} authentication"
   recovery_window_in_days = 0
 
   tags = {
@@ -39,7 +38,7 @@ resource "aws_elastic_beanstalk_application_version" "todo_app_initial" {
   name        = "initial-version"
   application = aws_elastic_beanstalk_application.todo_app.name
   description = "Initial empty app version"
-  bucket      = aws_s3_object.empty_app.bucket # Assuming aws_s3_object.empty_app is defined elsewhere
+  bucket      = aws_s3_object.empty_app.bucket
   key         = aws_s3_object.empty_app.key
 
   lifecycle {
@@ -47,14 +46,22 @@ resource "aws_elastic_beanstalk_application_version" "todo_app_initial" {
   }
 
   depends_on = [
-    aws_s3_object.empty_app # Assuming aws_s3_object.empty_app is defined elsewhere
+    aws_s3_object.empty_app
   ]
+}
+
+data "aws_secretsmanager_secret_version" "db_secret" {
+  secret_id = aws_db_instance.todo_postgres.master_user_secret[0].secret_arn
+}
+
+locals {
+  db_secret_json = jsondecode(data.aws_secretsmanager_secret_version.db_secret.secret_string)
 }
 
 resource "aws_elastic_beanstalk_environment" "todo_env" {
   name                = var.env_name
   application         = aws_elastic_beanstalk_application.todo_app.name
-  solution_stack_name = "64bit Amazon Linux 2023 v6.5.2 running Node.js 18"
+  solution_stack_name = "64bit Amazon Linux 2023 v6.5.2 running Node.js 22"
   tier                = "WebServer"
   version_label       = aws_elastic_beanstalk_application_version.todo_app_initial.name
 
@@ -69,6 +76,13 @@ resource "aws_elastic_beanstalk_environment" "todo_env" {
     namespace = "aws:autoscaling:launchconfiguration"
     name      = "IamInstanceProfile"
     value     = aws_iam_instance_profile.todo_eb_instance_profile.name
+  }
+
+  # Force use of launch templates for newer AWS accounts
+  setting {
+    namespace = "aws:autoscaling:launchconfiguration"
+    name      = "DisableIMDSv1"
+    value     = "true"
   }
 
   # VPC Configuration
@@ -130,7 +144,7 @@ resource "aws_elastic_beanstalk_environment" "todo_env" {
     value     = "enhanced"
   }
 
-  # Environment Variables
+  # Environment Variables - Basic ones first
   setting {
     namespace = "aws:elasticbeanstalk:application:environment"
     name      = "NODE_ENV"
@@ -155,23 +169,16 @@ resource "aws_elastic_beanstalk_environment" "todo_env" {
     value     = tostring(var.db_port)
   }
 
-  # AWS-managed master user secret
-  setting {
+   setting {
     namespace = "aws:elasticbeanstalk:application:environment"
     name      = "PG_USER"
-    value     = "{{resolve:secretsmanager:${aws_db_instance.todo_postgres.master_user_secret[0].secret_arn}:SecretString:username}}"
+    value     = local.db_secret_json.username
   }
 
   setting {
     namespace = "aws:elasticbeanstalk:application:environment"
     name      = "PG_PASSWORD"
-    value     = "{{resolve:secretsmanager:${aws_db_instance.todo_postgres.master_user_secret[0].secret_arn}:SecretString:password}}"
-  }
-
-  setting {
-    namespace = "aws:elasticbeanstalk:application:environment"
-    name      = "DB_SECRET_ARN"
-    value     = aws_db_instance.todo_postgres.master_user_secret[0].secret_arn
+    value     = local.db_secret_json.password
   }
 
   setting {
@@ -180,13 +187,20 @@ resource "aws_elastic_beanstalk_environment" "todo_env" {
     value     = "/api/health"
   }
 
-  # Inject JWT Secret from Secrets Manager
+  # Simplified secrets - try direct values first
   setting {
     namespace = "aws:elasticbeanstalk:application:environment"
-    name      = "JWT_SECRET"
-    value     = "{{resolve:secretsmanager:${aws_secretsmanager_secret.todo_jwt_secret.name}:SecretString:JWT_SECRET}}"
+    name      = "DB_SECRET_ARN"
+    value     = aws_db_instance.todo_postgres.master_user_secret[0].secret_arn
   }
 
+  setting {
+    namespace = "aws:elasticbeanstalk:application:environment"
+    name      = "JWT_SECRET_ARN"
+    value     = aws_secretsmanager_secret.todo_jwt_secret.arn
+  }
+
+  
   # ALB HTTPS Listener Configuration
   setting {
     namespace = "aws:elbv2:listener:443"
@@ -209,25 +223,41 @@ resource "aws_elastic_beanstalk_environment" "todo_env" {
   setting {
     namespace = "aws:elbv2:listener:443"
     name      = "SSLPolicy"
-    value     = "ELBSecurityPolicy-2016-08"
+    value     = "ELBSecurityPolicy-TLS-1-2-2017-01"
   }
 
-  # ALB HTTP Listener Configuration (handled by .ebextensions for redirect)
-  # Elastic Beanstalk will create a default forward rule for this,
-  # which will then be overwritten by the .ebextensions config.
+  # ALB HTTP Listener Configuration with Redirect to HTTPS (Revised)
   setting {
-    namespace = "aws:elbv2:listener:80"
+    namespace = "aws:elbv2:listener:80" # Explicitly referring to the HTTP listener
     name      = "ListenerEnabled"
     value     = "true"
   }
 
   setting {
     namespace = "aws:elbv2:listener:80"
-    name      = "Protocol"
-    value     = "HTTP"
+    name      = "ListenerEnabled"
+    value     = "false"
   }
 
-  # Health Check Path Configuration
+  setting {
+    namespace = "aws:elbv2:listener:80"
+    name      = "RedirectEnabled" # Enable redirection
+    value     = "true"
+  }
+
+  setting {
+    namespace = "aws:elbv2:listener:80"
+    name      = "RedirectPort" # Redirect to port 443 (HTTPS)
+    value     = "443"
+  }
+
+  setting {
+    namespace = "aws:elbv2:listener:80"
+    name      = "RedirectStatusCode" # Use a 301 Moved Permanently redirect
+    value     = "HTTP_301"
+  }
+
+  # Health Check Configuration
   setting {
     namespace = "aws:elasticbeanstalk:environment:process:default"
     name      = "HealthCheckPath"
@@ -245,9 +275,8 @@ resource "aws_elastic_beanstalk_environment" "todo_env" {
     aws_elastic_beanstalk_application_version.todo_app_initial,
     aws_db_instance.todo_postgres,
     aws_iam_role_policy_attachment.attach_eb_secrets_policy,
-    aws_security_group_rule.alb_to_eb_http,
-    aws_security_group_rule.alb_to_eb_https,
     aws_iam_role_policy_attachment.attach_eb_jwt_secrets_policy,
     aws_secretsmanager_secret_version.todo_jwt_secret_version
   ]
 }
+

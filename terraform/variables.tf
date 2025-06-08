@@ -1,13 +1,13 @@
 variable "aws_region" {
   description = "The AWS region to deploy resources into."
   type        = string
-  default     = "us-east-1"
+  default     = "af-south-1"
 }
 
 variable "app_name" {
   description = "Name of the application."
   type        = string
-  default     = "todo-list-app"
+  default     = "app-todo"
 }
 
 variable "env_name" {
@@ -37,7 +37,7 @@ variable "db_port" {
 variable "db_engine_version" {
   description = "The version of the PostgreSQL database engine."
   type        = string
-  default     = "16.4"
+  default     = "17.4"
 }
 
 variable "vpc_cidr_block" {

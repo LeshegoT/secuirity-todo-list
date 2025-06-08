@@ -114,3 +114,23 @@ resource "aws_iam_role_policy_attachment" "todo_eb_service_managed_policy" {
   role       = aws_iam_role.todo_eb_service_role.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSElasticBeanstalkService"
 }
+
+resource "aws_iam_role_policy_attachment" "eb_ec2_multicontainer_docker_policy" {
+  role       = aws_iam_role.todo_eb_ec2_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AWSElasticBeanstalkMulticontainerDocker"
+}
+
+resource "aws_iam_role_policy_attachment" "eb_ec2_worker_tier_policy" {
+  role       = aws_iam_role.todo_eb_ec2_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AWSElasticBeanstalkWorkerTier"
+}
+
+resource "aws_iam_role_policy_attachment" "eb_ec2_cloudwatch_policy" {
+  role       = aws_iam_role.todo_eb_ec2_role.name
+  policy_arn = "arn:aws:iam::aws:policy/CloudWatchFullAccess"
+}
+
+resource "aws_iam_role_policy_attachment" "eb_ec2_ecr_readonly_policy" {
+  role       = aws_iam_role.todo_eb_ec2_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
+}

@@ -3,20 +3,22 @@ resource "aws_security_group" "todo_alb_sg" {
   description = "Security group for Application Load Balancer"
   vpc_id      = aws_vpc.todo_vpc.id
 
-  ingress {
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-    description = "Allow HTTP from internet"
-  }
-
+  # Ingress: ONLY allow HTTPS (443) from the internet
   ingress {
     from_port   = 443
     to_port     = 443
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = ["0.0.0.0/0"] 
     description = "Allow HTTPS from internet"
+  }
+
+  # Egress: Allow all outbound traffic from ALB (common for health checks, etc.)
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+    description = "Allow all outbound traffic from ALB"
   }
 
   tags = {
@@ -29,22 +31,16 @@ resource "aws_security_group" "todo_eb_sg" {
   description = "Allow inbound traffic to Elastic Beanstalk instances from ALB only"
   vpc_id      = aws_vpc.todo_vpc.id
 
+  # Ingress: Allow traffic from the ALB's security group to the Docker app port (8080)
   ingress {
-    from_port         = 80
-    to_port           = 80
-    protocol          = "tcp"
-    security_groups   = [aws_security_group.todo_alb_sg.id]
-    description       = "Allow HTTP from ALB only"
-  }
-  
-  ingress {
-    from_port         = 443
-    to_port           = 443
-    protocol          = "tcp"
-    security_groups   = [aws_security_group.todo_alb_sg.id]
-    description       = "Allow HTTPS from ALB only"
+    from_port        = 8080 
+    to_port          = 8080 
+    protocol         = "tcp"
+    security_groups  = [aws_security_group.todo_alb_sg.id] 
+    description      = "Allow app port (8080) from ALB only"
   }
 
+  # Egress: Allow all outbound traffic from EB instances (for Docker builds, DB, Secrets Manager)
   egress {
     from_port   = 0
     to_port     = 0
@@ -67,7 +63,7 @@ resource "aws_security_group" "todo_rds_sg" {
     from_port       = var.db_port
     to_port         = var.db_port
     protocol        = "tcp"
-    security_groups = [aws_security_group.todo_eb_sg.id]
+    security_groups = [aws_security_group.todo_eb_sg.id] 
     description     = "Allow PostgreSQL traffic from Elastic Beanstalk"
   }
 
@@ -76,22 +72,3 @@ resource "aws_security_group" "todo_rds_sg" {
   }
 }
 
-resource "aws_security_group_rule" "alb_to_eb_http" {
-  type                     = "egress"
-  from_port                = 80
-  to_port                  = 80
-  protocol                 = "tcp"
-  security_group_id        = aws_security_group.todo_alb_sg.id
-  source_security_group_id = aws_security_group.todo_eb_sg.id
-  description              = "Allow HTTP to EB instances"
-}
-
-resource "aws_security_group_rule" "alb_to_eb_https" {
-  type                     = "egress"
-  from_port                = 443
-  to_port                  = 443
-  protocol                 = "tcp"
-  security_group_id        = aws_security_group.todo_alb_sg.id
-  source_security_group_id = aws_security_group.todo_eb_sg.id
-  description              = "Allow HTTPS to EB instances"
-}
