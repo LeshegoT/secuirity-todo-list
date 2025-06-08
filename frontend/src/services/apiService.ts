@@ -1,4 +1,4 @@
-import { Team } from "../types";
+import { Status, Team } from "../types";
 
 interface User {
   id: string;
@@ -49,34 +49,27 @@ async function handleResponse<T>(response: Response): Promise<T> {
   const contentType = response.headers.get("content-type");
   let data: any;
 
-  // Attempt to parse JSON if content type is JSON
   if (contentType && contentType.includes("application/json")) {
     try {
       data = await response.json();
     } catch (e) {
-      // If parsing fails, treat as generic text or empty
       data = {};
       console.error("Failed to parse JSON response:", e, response);
     }
   } else {
-    data = await response.text(); // Fallback for non-JSON responses
-    // Wrap text in an object to match expected data structure from axios responses
+    data = await response.text(); 
     data = { message: data || "No response data" };
   }
 
   if (!response.ok) {
-    // For fetch, non-2xx responses are NOT errors by default.
-    // We manually throw an error to simulate axios's behavior.
     const errorMessage =
       data.message || response.statusText || "Something went wrong";
     const error = new Error(errorMessage) as any;
     error.response = {
-      // Attach response details similar to axios for consistency with AuthContext
       status: response.status,
       data: data,
     };
     if (response.status === 401) {
-      // Simulate axios interceptor for 401 by redirecting
       localStorage.removeItem("token");
       localStorage.removeItem("user");
       window.location.href = "/login";
@@ -93,9 +86,6 @@ class ApiService {
     this.baseURL = "/api";
   }
 
-  // With native fetch, you typically retrieve the token right before making the request
-  // as there's no global instance to configure like axios.
-  // These methods update localStorage directly, which the fetchWrapper then reads.
   setAuthToken(token: string): void {
     localStorage.setItem("token", token);
   }
@@ -189,6 +179,12 @@ class ApiService {
     >
   > {
     return this.fetchWrapper("/priorities", {
+      method: "GET",
+    });
+  }
+
+  async retrieveStatuses(): Promise<DataResponse<Status[]>> {
+    return this.fetchWrapper("/statuses", {
       method: "GET",
     });
   }

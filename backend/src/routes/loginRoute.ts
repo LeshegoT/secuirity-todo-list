@@ -22,7 +22,6 @@ router.post('/login', async (req: LoginRequestBody, res: Response<LoginResponse>
   try {
     const { email, password, totpToken } = req.body;
 
-    // Input validation
     if (!validateEmail(email)) {
       res.status(400).json({ 
         message: 'Please provide a valid email address' 

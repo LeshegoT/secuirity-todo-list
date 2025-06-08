@@ -9,6 +9,7 @@ import validateRoute from './routes/validateRoute.js';
 import loginRoute from './routes/loginRoute.js';
 import teamsRouter from './routes/teams.js';
 import prioritiesRouter from './routes/priorities.js';
+import statusesRouter from './routes/statuses.js';
 import { authenticateToken } from './middlewares/auth.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -40,6 +41,7 @@ app.use('/api/login', authLimiter);
 app.use('/api/verify', authLimiter);
 app.use('/api/teams', authenticateToken ,teamsRouter);
 app.use('/api/priorities', prioritiesRouter);
+app.use('/api/statuses', statusesRouter);
 
 app.use('/api', registerRoute);
 app.use('/api', verifyRoute);

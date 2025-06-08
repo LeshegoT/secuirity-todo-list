@@ -33,17 +33,14 @@ export default function CreateTaskDialog({ open, onClose, teams, currentUser, pr
   const [assigneeId, setAssigneeId] = useState("")
 
   const handleCreateTask = () => {
-    // Implement API call to create task
     console.log({
       title,
       description,
       teamId: Number(teamId),
       priorityId: Number(priorityId),
       assigneeId: assigneeId === "unassigned" ? null : Number(assigneeId),
-      createdBy: currentUser.id,
+      createdBy: currentUser.uuid,
     })
-
-    // Reset form and close dialog
     resetForm()
     onClose()
   }
@@ -103,7 +100,7 @@ export default function CreateTaskDialog({ open, onClose, teams, currentUser, pr
               onChange={(e) => setTeamId(e.target.value)}
             >
               {teams
-                .filter((team) => team.members.some((member) => member.id === currentUser.id))
+                .filter((team) => team.members.some((member) => member.uuid === currentUser.uuid))
                 .map((team) => (
                   <MenuItem key={team.id} value={team.id.toString()}>
                     {team.name}
@@ -141,7 +138,7 @@ export default function CreateTaskDialog({ open, onClose, teams, currentUser, pr
               <MenuItem value="unassigned">Unassigned</MenuItem>
               {teamId &&
                 selectedTeamMembers.map((member) => (
-                  <MenuItem key={member.id} value={member.id.toString()}>
+                  <MenuItem key={member.uuid} value={member.uuid.toString()}>
                     {member.name}
                   </MenuItem>
                 ))}

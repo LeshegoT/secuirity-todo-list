@@ -19,7 +19,7 @@ export default function TeamSidebar({ teams, currentUser, selectedTeam, onSelect
 
   const isTeamLead = (teamId: number) => {
     const team = teams.find((t) => t.id === teamId)
-    return team?.teamLeadId === currentUser.id
+    return team?.teamLeadUuid === currentUser.uuid
   }
 
   const handleOpenManageTeam = (team: Team) => {

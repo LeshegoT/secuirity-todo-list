@@ -30,7 +30,7 @@ interface TaskCardProps {
   onUnassignSelf: (todoId: number) => void
   onMarkComplete: (todoId: number) => void
   onDeleteTask: (todoId: number) => void
-  onAssignToUser: (todoId: number, userId: number) => void
+  onAssignToUser: (todoId: number, uuid: string) => void
   onEditTask: (todoId: number) => void
 }
 
@@ -59,8 +59,8 @@ export default function TaskCard({
   }
 
   const team = teams.find((t) => t.id === todo.teamId)
-  const isTeamLead = team?.teamLeadId === currentUser.id
-  const isAssignedToMe = todo.assignedToId === currentUser.id
+  const isTeamLead = team?.teamLeadUuid === currentUser.uuid
+  const isAssignedToMe = todo.assignedToId === currentUser.uuid
   const status = statuses.find((s) => s.id === todo.statusId)
   const priority = priorities.find((p) => p.id === todo.priorityId)
 
@@ -90,10 +90,10 @@ export default function TaskCard({
     }
   }
 
-  const getUserName = (userId: number | null) => {
-    if (!userId) return "Unassigned"
+  const getUserName = (uuid: string | null) => {
+    if (!uuid) return "Unassigned"
     const allUsers = teams.flatMap((team) => team.members)
-    const user = allUsers.find((u) => u.id === userId)
+    const user = allUsers.find((u) => u.uuid === uuid)
     return user?.name || "Unknown User"
   }
 
@@ -181,9 +181,9 @@ export default function TaskCard({
 
                   {team?.members.map((member) => (
                     <MenuItem
-                      key={member.id}
-                      onClick={() => onAssignToUser(todo.id, member.id)}
-                      disabled={todo.assignedToId === member.id}
+                      key={member.uuid}
+                      onClick={() => onAssignToUser(todo.id, member.uuid)}
+                      disabled={todo.assignedToId === member.uuid}
                     >
                       <ListItemIcon>
                         <PersonAdd fontSize="small" />
