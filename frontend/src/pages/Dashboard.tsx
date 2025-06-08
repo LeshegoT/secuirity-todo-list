@@ -20,67 +20,20 @@ import { Settings, Logout } from "@mui/icons-material";
 import TeamSidebar from "../components/TeamSidebar";
 import TaskList from "../components/TaskList";
 import { apiService } from "../services/apiService";
-import { Team } from "../types";
-
+import { Status, Team, Priority } from "../types";
 
 const currentUser = {
-  id: 1,
+  uuid: "e59c2865-79d9-4f6a-8908-23edf0d03889",
   name: "John Doe",
   email: "john@example.com",
   avatar: undefined,
-};
-
-const todos = [
-  {
-    id: 1,
-    title: "Implement user authentication",
-    description: "Add login and registration functionality with 2FA",
-    assignedToId: 1,
-    teamId: 1,
-    statusId: 1,
-    priorityId: 1,
-    createdAt: "2024-01-15",
-    createdBy: 2,
-  },
-  {
-    id: 2,
-    title: "Design dashboard UI",
-    description: "Create wireframes and mockups for the main dashboard",
-    assignedToId: 2,
-    teamId: 1,
-    statusId: 2,
-    priorityId: 2,
-    createdAt: "2024-01-14",
-    createdBy: 1,
-  },
-  {
-    id: 3,
-    title: "Set up database schema",
-    description: "Create and migrate database tables",
-    assignedToId: null,
-    teamId: 2,
-    statusId: 1,
-    priorityId: 1,
-    createdAt: "2024-01-13",
-    createdBy: 4,
-  },
-];
-
-const statuses = [
-  { id: 1, name: "To Do" },
-  { id: 2, name: "In Progress" },
-  { id: 3, name: "Done" },
-];
-
-type Priority = {
-  id: number;
-  name: string;
 };
 
 export default function Dashboard() {
   const [selectedTeam, setSelectedTeam] = useState<number | null>(null);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [priorities, setPriorities] = useState<Priority[]>([]);
+  const [statuses, setStatuses] = useState<Status[]>([]);
   const [teams, setUserTeams] = useState<Team[]>([]);
   const open = Boolean(anchorEl);
 
@@ -90,14 +43,19 @@ export default function Dashboard() {
       setPriorities(response.data);
     };
 
-     const fetchUserTeams = async () => {
+    const fetchUserTeams = async () => {
       const response = await apiService.retrieveUserTeams();
       setUserTeams(response.data);
+    };
 
+    const retrieveStatuses = async () => {
+      const response = await apiService.retrieveStatuses();
+      setStatuses(response.data);
     };
 
     fetchPriorities();
-    fetchUserTeams ();
+    fetchUserTeams();
+    retrieveStatuses();
   }, []);
 
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
@@ -173,7 +131,7 @@ export default function Dashboard() {
             </Grid>
             <Grid>
               <TaskList
-                todos={todos}
+                todos={teams.flatMap((el) => el.todos)}
                 teams={teams}
                 currentUser={currentUser}
                 selectedTeam={selectedTeam}

@@ -1,4 +1,4 @@
-import { Team } from "../types";
+import { Status, Team } from "../types";
 
 interface User {
   id: string;
@@ -189,6 +189,12 @@ class ApiService {
     >
   > {
     return this.fetchWrapper("/priorities", {
+      method: "GET",
+    });
+  }
+
+  async retrieveStatuses(): Promise<DataResponse<Status[]>> {
+    return this.fetchWrapper("/statuses", {
       method: "GET",
     });
   }

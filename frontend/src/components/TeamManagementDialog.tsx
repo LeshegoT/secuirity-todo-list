@@ -42,18 +42,18 @@ export default function TeamManagementDialog({ open, onClose, team, currentUser 
     setTimeout(() => {
       // Mock user database - replace with actual API call
       const allUsers = [
-        { id: 5, name: "Alice Cooper", email: "alice@example.com" },
-        { id: 6, name: "Bob Smith", email: "bob@example.com" },
-        { id: 7, name: "Charlie Brown", email: "charlie@example.com" },
-        { id: 8, name: "Diana Prince", email: "diana@example.com" },
-        { id: 9, name: "Edward Norton", email: "edward@example.com" },
+        { uuid: "1bd68a82-135c-4158-8541-927616b64c16", name: "Alice Cooper", email: "alice@example.com" },
+        { uuid: "1bd68a82-135c-4158-8541-927616b64c16", name: "Bob Smith", email: "bob@example.com" },
+        { uuid: "1bd68a82-135c-4158-8541-927616b64c16", name: "Charlie Brown", email: "charlie@example.com" },
+        { uuid: "1bd68a82-135c-4158-8541-927616b64c16", name: "Diana Prince", email: "diana@example.com" },
+        { uuid: "1bd68a82-135c-4158-8541-927616b64c16", name: "Edward Norton", email: "edward@example.com" },
       ]
 
       const results = allUsers.filter(
         (user) =>
           (user.name.toLowerCase().includes(query.toLowerCase()) ||
             user.email.toLowerCase().includes(query.toLowerCase())) &&
-          !team.members.some((member) => member.id === user.id),
+          !team.members.some((member) => member.uuid === user.uuid),
       )
 
       setSearchResults(results)
@@ -70,9 +70,9 @@ export default function TeamManagementDialog({ open, onClose, team, currentUser 
   }
 
   // Add this function to handle removing a user from the team
-  const handleRemoveMember = (userId: number) => {
+  const handleRemoveMember = (uuid: string) => {
     // Handle removing member from team - replace with actual API call
-    console.log(`Removing user ${userId} from team ${team.name}`)
+    console.log(`Removing user ${uuid} from team ${team.name}`)
   }
 
   return (
@@ -84,7 +84,7 @@ export default function TeamManagementDialog({ open, onClose, team, currentUser 
         </Typography>
         <List>
           {team.members.map((member) => (
-            <ListItem key={member.id}>
+            <ListItem key={member.uuid}>
               <ListItemAvatar>
                 <Avatar src={member.avatar}>{member.name.charAt(0)}</Avatar>
               </ListItemAvatar>
@@ -92,14 +92,14 @@ export default function TeamManagementDialog({ open, onClose, team, currentUser 
                 primary={
                   <Box sx={{ display: "flex", alignItems: "center" }}>
                     {member.name}
-                    {member.id === team.teamLeadId && <EmojiEvents fontSize="small" color="warning" sx={{ ml: 1 }} />}
+                    {member.uuid === team.teamLeadUuid && <EmojiEvents fontSize="small" color="warning" sx={{ ml: 1 }} />}
                   </Box>
                 }
                 secondary={member.email}
               />
-              {member.id !== team.teamLeadId && member.id !== currentUser.id && (
+              {member.uuid !== team.teamLeadUuid && member.uuid !== currentUser.uuid && (
                 <ListItemSecondaryAction>
-                  <IconButton edge="end" onClick={() => handleRemoveMember(member.id)}>
+                  <IconButton edge="end" onClick={() => handleRemoveMember(member.uuid)}>
                     <PersonRemove />
                   </IconButton>
                 </ListItemSecondaryAction>
@@ -134,7 +134,7 @@ export default function TeamManagementDialog({ open, onClose, team, currentUser 
         {searchResults.length > 0 && (
           <List sx={{ mt: 2, maxHeight: 240, overflow: "auto", border: 1, borderColor: "divider", borderRadius: 1 }}>
             {searchResults.map((user) => (
-              <ListItem key={user.id}>
+              <ListItem key={user.uuid}>
                 <ListItemAvatar>
                   <Avatar src={user.avatar}>{user.name.charAt(0)}</Avatar>
                 </ListItemAvatar>
