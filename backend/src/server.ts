@@ -8,6 +8,7 @@ import verifyRoute from './routes/verifyRoute.js';
 import validateRoute from './routes/validateRoute.js';
 import loginRoute from './routes/loginRoute.js';
 import teamsRouter from './routes/teams.js';
+import todoRouter from './routes/todo.js'
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -44,6 +45,7 @@ app.use('/api/register', authLimiter);
 app.use('/api/login', authLimiter);
 app.use('/api/verify', authLimiter);
 app.use('/api/teams', teamsRouter);
+app.use('/api/todos', todoRouter);
 
 
 app.get('/api/health', (_req: Request, res: Response): void => {

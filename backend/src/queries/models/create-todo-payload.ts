@@ -1,12 +1,9 @@
-export interface Todo {
-  id: number;
+export interface CreateTodoPayload {
   title: string;
   assignedToId: number | null;
   teamId: number;
   statusId: number;
   priorityId: number;
-  createdAt: Date;
   createdBy: number;
   description: string;
-  isActive: boolean;
 }
