@@ -20,42 +20,15 @@ import { Settings, Logout } from "@mui/icons-material";
 import TeamSidebar from "../components/TeamSidebar";
 import TaskList from "../components/TaskList";
 import { apiService } from "../services/apiService";
+import { Team } from "../types";
 
-// Mock data
+
 const currentUser = {
   id: 1,
   name: "John Doe",
   email: "john@example.com",
   avatar: undefined,
 };
-
-const teams = [
-  {
-    id: 1,
-    name: "Alpha Team",
-    members: [
-      {
-        id: 1,
-        name: "tebogo.motibane@gmaiol.com",
-      },
-      {
-        id: 2,
-        name: "alice",
-      },
-    ],
-    teamLeadId: 1,
-    teamLeadName: "tebogo.motibane@gmaiol.com",
-  },
-  {
-    id: 2,
-    name: "Backend Team",
-    teamLeadId: 4,
-    members: [
-      { id: 4, name: "Sarah Wilson", email: "sarah@example.com" },
-      { id: 1, name: "John Doe", email: "john@example.com" },
-    ],
-  },
-];
 
 const todos = [
   {
@@ -108,33 +81,23 @@ export default function Dashboard() {
   const [selectedTeam, setSelectedTeam] = useState<number | null>(null);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [priorities, setPriorities] = useState<Priority[]>([]);
+  const [teams, setUserTeams] = useState<Team[]>([]);
   const open = Boolean(anchorEl);
 
   useEffect(() => {
     const fetchPriorities = async () => {
       const response = await apiService.retrievePriorities();
-      setPriorities([
-        {
-          id: 5,
-          name: "Low",
-        },
-        {
-          id: 6,
-          name: "Medium",
-        },
-        {
-          id: 7,
-          name: "High",
-        },
-        {
-          id: 8,
-          name: "Critical",
-        },
-      ]);
-      console.log(priorities);
+      setPriorities(response.data);
+    };
+
+     const fetchUserTeams = async () => {
+      const response = await apiService.retrieveUserTeams();
+      setUserTeams(response.data);
+
     };
 
     fetchPriorities();
+    fetchUserTeams ();
   }, []);
 
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {

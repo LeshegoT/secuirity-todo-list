@@ -19,7 +19,7 @@ router.get("/mine", async (req: RequestWithUser, res, next) => {
 
         res.status(200).json({
           status: "success",
-          data: { teams: teams || [] },
+          data: teams,
         });
       }
     }

@@ -1,3 +1,5 @@
+import { Team } from "../types";
+
 interface User {
   id: string;
   name: string;
@@ -169,6 +171,12 @@ class ApiService {
     return this.fetchWrapper("/validate", {
       method: "POST",
       body: JSON.stringify({ token }),
+    });
+  }
+
+  async retrieveUserTeams(): Promise<DataResponse<Team[]>> {
+    return this.fetchWrapper("/teams/mine", {
+      method: "GET",
     });
   }
 

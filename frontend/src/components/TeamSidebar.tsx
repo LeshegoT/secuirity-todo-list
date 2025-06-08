@@ -40,9 +40,7 @@ export default function TeamSidebar({ teams, currentUser, selectedTeam, onSelect
             <ListItemText primary="All Tasks" />
           </ListItemButton>
         </ListItem>
-
         {teams
-          .filter((team) => team.members.some((member) => member.id === currentUser.id))
           .map((team) => (
             <ListItem
               key={team.id}
