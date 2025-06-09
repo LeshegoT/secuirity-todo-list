@@ -8,6 +8,7 @@ on:
       - 'database/migrations/**'
   
   workflow_dispatch:
+
 permissions:
   contents: read
   id-token: write
@@ -28,13 +29,6 @@ jobs:
           role-session-name: GitHub_to_AWS_via_FederatedOIDC
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Get private key secret # This step is present but its output is not used by Flyway or the tunnel anymore
-        uses: aws-actions/aws-secretsmanager-get-secrets@v2
-        with:
-          secret-ids: |
-            credentials
-          parse-json-secrets: true
-
       - name: Copy ssh key and modify permissions
         run: |
           aws s3 cp s3://sec-migration-s3-bucket/secuiritybastion.pem .
@@ -43,11 +37,11 @@ jobs:
 
       - name: Configure ssh tunnel through bastion host
         run: |
-          mkdir ~/.ssh
+          mkdir -p ~/.ssh
           ssh-keyscan -H ${{ secrets.BASTION_HOST }} >> ~/.ssh/known_hosts
-          eval `ssh-agent -s`
-          # ONLY CHANGE IS HERE: Use secrets.DB_HOST and secrets.DB_PORT for consistency
-          ssh -fN -v -L 127.0.0.1:${{ secrets.DB_PORT }}:${{ secrets.DB_HOST }}:${{ secrets.DB_PORT }} ${{ secrets.BASTION_USER }}@${{ secrets.BASTION_HOST }} -i ssh_key.pem &
+          eval "$(ssh-agent -s)"
+          ssh -fN -v -L 127.0.0.1:${{ secrets.DB_PORT }}:${{ secrets.DB_HOST }}:${{ secrets.DB_PORT }} \
+            ${{ secrets.BASTION_USER }}@${{ secrets.BASTION_HOST }} -i ssh_key.pem &
 
       - name: Generate flyway config file
         run: |
