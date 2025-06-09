@@ -1,9 +1,8 @@
 import { Router } from "express";
-import {createTodo, getTodos, updateTodo} from "../queries/todo";
-import {CreateTodoPayload, UpdateTodoPayload, UserResponse} from "../queries/models/todo";
-import {NotFoundError, UnauthorizedError} from "./errors/customError";
-import {InvalidIdError} from "./errors/customError";
-import {getUser} from "../queries/users";
+import {createTodo, getTodos, updateTodo} from "../queries/todo.js";
+import {CreateTodoPayload, UpdateTodoPayload, UserResponse} from "../queries/models/todo.js";
+import {NotFoundError, UnauthorizedError, InvalidIdError} from "./errors/customError.js";
+import {getUser} from "../queries/users.js";
 
 const router = Router();
 

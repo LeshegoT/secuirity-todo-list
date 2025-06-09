@@ -1,9 +1,11 @@
 export interface UserResponse {
-  id: number;
-  uuid: string;
-  name: string;
-  email: string;
-  isVerified: boolean;
-  createdAt: Date;
-  userRoles: string[];
+  id: number
+  email: string
+  name: string
+  createdAt: Date
+  isVerified: boolean
+  uuid: string
+  userRoles: string[]
+  isActive?: boolean
+  deletedAt?: Date | null
 }
