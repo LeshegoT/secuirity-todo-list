@@ -12,6 +12,7 @@ import todoRouter from './routes/todo.js'
 import prioritiesRouter from './routes/priorities.js';
 import statusesRouter from './routes/statuses.js';
 import { authenticateToken } from './middlewares/auth.js';
+import { createUserRoutes } from './routes/userRoutes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -40,8 +41,9 @@ app.use('/api', apiLimiter);
 app.use('/api/register', authLimiter);
 app.use('/api/login', authLimiter);
 app.use('/api/verify', authLimiter);
+app.use("/api/users", authenticateToken, createUserRoutes());
 app.use('/api/todos', authenticateToken, todoRouter);
-app.use('/api/teams', authenticateToken ,teamsRouter);
+app.use('/api/teams', authenticateToken, teamsRouter);
 app.use('/api/priorities', prioritiesRouter);
 app.use('/api/statuses', statusesRouter);
 
