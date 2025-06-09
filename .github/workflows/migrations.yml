@@ -50,7 +50,7 @@ jobs:
           flyway.user=${{ secrets.DB_USER }}
           flyway.password=${{ secrets.DB_PASSWORD }}
           EOF
-          cat database/flyway/flyway.conf >> flyway.generated.conf
+          cat database/migrations/flyway.conf >> flyway.generated.conf
 
       - name: Run Flyway Migration
         run: |
