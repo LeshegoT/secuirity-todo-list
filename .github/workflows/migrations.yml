@@ -1,27 +1,63 @@
-name: Database Migrations with FlywayAdd commentMore actions
+name: Database Migration with Flyway
 
 on:
-  workflow_dispatch:
   push:
     branches:
       - main
     paths:
       - 'database/migrations/**'
+
+permissions:
+  contents: read
+  id-token: write
+
 jobs:
-  FlywayMigration:
-    name: Run Flyway Migrations
+  migrate-database:
+    name: Run Flyway Migration
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Repository
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Execute Flyway Migrations
+      - name: Assume the deploy pipeline user role
+        uses: aws-actions/configure-aws-credentials@v4.0.1
+        with:
+          role-to-assume: ${{ secrets.ASSUME_ROLE_ARN }}
+          role-session-name: GitHub_to_AWS_via_FederatedOIDC
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Get private key secret # This step is present but its output is not used by Flyway or the tunnel anymore
+        uses: aws-actions/aws-secretsmanager-get-secrets@v2
+        with:
+          secret-ids: |
+            credentials
+          parse-json-secrets: true
+
+      - name: Copy ssh key and modify permissions
         run: |
-          docker run --rm \
-            --volume ${GITHUB_WORKSPACE}/src/migrations:/flyway/sql:ro \
-            redgate/flyway \
-            -url="jdbc:postgresql://${{ vars.DB_HOST }}:${{ vars.DB_PORT }}/${{ vars.DB_NAME }}?sslmode=require" \
-            -user="${{ vars.DB_USER }}" \
-            -password="${{ secrets.DB_PASSWORD }}" \
-            migrate
+          aws s3 cp s3://sec-migration-s3-bucket/secuiritybastion.pem .
+          mv secuiritybastion.pem ssh_key.pem
+          chmod 600 ssh_key.pem
+
+      - name: Configure ssh tunnel through bastion host
+        run: |
+          mkdir ~/.ssh
+          ssh-keyscan -H ${{ secrets.BASTION_HOST }} >> ~/.ssh/known_hosts
+          eval `ssh-agent -s`
+          # ONLY CHANGE IS HERE: Use secrets.DB_HOST and secrets.DB_PORT for consistency
+          ssh -fN -v -L 127.0.0.1:${{ secrets.DB_PORT }}:${{ secrets.DB_HOST }}:${{ secrets.DB_PORT }} ${{ secrets.BASTION_USER }}@${{ secrets.BASTION_HOST }} -i ssh_key.pem &
+
+      - name: Generate flyway config file
+        run: |
+          cat > flyway.generated.conf <<EOF
+          flyway.url=jdbc:postgresql://localhost:${{ secrets.DB_PORT }}/${{ secrets.DB_NAME }}
+          flyway.user=${{ secrets.DB_USER }}
+          flyway.password=${{ secrets.DB_PASSWORD }}
+          EOF
+          cat database/flyway/flyway.conf >> flyway.generated.conf
+
+      - name: Run Flyway Migration
+        run: |
+          sudo snap install flyway
+          flyway migrate -configFiles=flyway.generated.conf
