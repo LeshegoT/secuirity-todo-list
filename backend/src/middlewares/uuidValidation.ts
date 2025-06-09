@@ -29,7 +29,7 @@ export const validateUUID = (paramName = "id") => {
     }
 
     req.validatedUUID = uuid;
-    next();
+    return next();
   };
 };
 
@@ -49,8 +49,7 @@ export const requireUUIDAuth = (
         });
       }
       (req as any).authenticatedUUID = userUUID;
-      next();
-      return;
+      return next();
     }
 
     const authUUID = req.headers["x-user-uuid"] as string;

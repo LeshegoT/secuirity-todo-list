@@ -38,10 +38,9 @@ export const checkUserRoles = async (
     req.isTeamLead = user.userRoles?.includes("team_lead") || false;
     req.isTeamMember = user.userRoles?.includes("team_member") || false;
 
-    next();
+    return next();
   } catch (error) {
-    console.error("Error checking user roles:", error);
-    res.status(500).json({
+    return res.status(500).json({
       error: "Internal server error",
       code: "ROLE_CHECK_ERROR",
       details: error instanceof Error ? error.message : "Unknown error",
@@ -60,7 +59,7 @@ export const requireAdmin = (
       code: "INSUFFICIENT_PERMISSIONS",
     });
   }
-  next();
+  return next();
 };
 
 export const requireTeamLeadOrAdmin = (
@@ -74,7 +73,7 @@ export const requireTeamLeadOrAdmin = (
       code: "INSUFFICIENT_PERMISSIONS",
     });
   }
-  next();
+  return next();
 };
 
 export const requireAnyRole = (
@@ -88,5 +87,5 @@ export const requireAnyRole = (
       code: "NO_ROLES_ASSIGNED",
     });
   }
-  next();
+  return next();
 };

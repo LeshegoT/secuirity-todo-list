@@ -1,7 +1,7 @@
-import {pool} from "../config/dbconfig";
+import {pool} from "../config/dbconfig.js";
 import {RawTodo, TeamInTodoResponse, TodoResponse, UserInTodoResponse, CreateTodoPayload, UpdateTodoPayload} from "./models/todo";
-import {getUserId} from "./users";
-import {NotFoundError} from "../routes/errors/customError";
+import {getUserId} from "./users.js";
+import {NotFoundError} from "../routes/errors/customError.js";
 import {Todo} from "../models/todo";
 import {TodoStatus} from "../models/todo-status";
 import {TodoPriority} from "../models/todo-priority";

@@ -41,13 +41,12 @@ export const createUserRoutes = (): Router => {
         }
         const roles = await getAllRoles();
 
-        res.json({
+        return res.json({
           success: true,
           data: roles,
         });
       } catch (error) {
-        console.error("Error fetching roles:", error);
-        res.status(500).json({
+        return res.status(500).json({
           error: "Internal server error",
           code: "FETCH_ROLES_ERROR",
         });
@@ -124,13 +123,12 @@ export const createUserRoutes = (): Router => {
           });
         }
 
-        res.json({
+        return res.json({
           success: true,
           data: user,
         });
       } catch (error) {
-        console.error("Error fetching user:", error);
-        res.status(500).json({
+        return res.status(500).json({
           error: "Internal server error",
           code: "FETCH_USER_ERROR",
         });
@@ -213,7 +211,7 @@ export const createUserRoutes = (): Router => {
           replace: "updated for",
         };
 
-        res.json({
+        return res.json({
           success: true,
           message: `Roles ${
             operationMessages[operation as keyof typeof operationMessages]
@@ -225,8 +223,7 @@ export const createUserRoutes = (): Router => {
           },
         });
       } catch (error) {
-        console.error("Error updating user roles:", error);
-        res.status(500).json({
+        return res.status(500).json({
           error: "Internal server error",
           code: "UPDATE_ROLES_ERROR",
         });
@@ -277,14 +274,13 @@ export const createUserRoutes = (): Router => {
           });
         }
 
-        res.json({
+        return res.json({
           success: true,
           message: `User ${isActive ? "unlocked" : "locked"} successfully`,
           data: { userId: targetUUID, isActive },
         });
       } catch (error) {
-        console.error("Error updating user lock status:", error);
-        res.status(500).json({
+        return res.status(500).json({
           error: "Internal server error",
           code: "UPDATE_LOCK_ERROR",
         });
@@ -327,14 +323,13 @@ export const createUserRoutes = (): Router => {
           });
         }
 
-        res.json({
+        return res.json({
           success: true,
           message: "User deleted successfully",
           data: { userId: targetUUID },
         });
       } catch (error) {
-        console.error("Error deleting user:", error);
-        res.status(500).json({
+        return res.status(500).json({
           error: "Internal server error",
           code: "DELETE_USER_ERROR",
         });
@@ -351,6 +346,7 @@ export const createUserRoutes = (): Router => {
       try {
         const authUUID = (req as any).authenticatedUUID;
         const targetUUID = req.validatedUUID!;
+
 
         const canView =
           req.isAdmin ||
@@ -374,13 +370,12 @@ export const createUserRoutes = (): Router => {
 
         const teams = await getUserTeams(targetUUID);
 
-        res.json({
+        return res.json({
           success: true,
           data: teams,
         });
       } catch (error) {
-        console.error("Error fetching user teams:", error);
-        res.status(500).json({
+        return res.status(500).json({
           error: "Internal server error",
           code: "FETCH_USER_TEAMS_ERROR",
         });
