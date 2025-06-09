@@ -1,4 +1,4 @@
-import { Status, Team } from "../types";
+import { Status, Team, Todo } from "../types";
 
 interface User {
   id: string;
@@ -249,6 +249,50 @@ class ApiService {
   ): Promise<ApiResponse<{ id: number; name: string; is_lead: boolean }[]>> {
     return this.fetchWrapper(`/users/${uuid}/teams`, {
       method: "GET",
+    });
+  }
+
+  async getUIserSearchResults(
+    searchText: string
+  ): Promise<DataResponse<{ uuid: string; name: string }[]>> {
+    return this.fetchWrapper(
+      "/search/users?searchText=" + encodeURIComponent(searchText),
+      {
+        method: "GET",
+      }
+    );
+  }
+
+  async createTeam(
+    teamData: { name: string; members: { uuid: string; name: string }[] }
+  ): Promise<DataResponse<Team>> {
+    return this.fetchWrapper("/teams", {
+      method: "POST",
+      body: JSON.stringify({
+        name: teamData.name,
+        members: teamData.members || [],
+      }),
+    });
+  }
+
+  async createTask(
+    title: string,
+    assignedToUuid: string,
+    teamId: number,
+    statusId: number,
+    priorityId: number,
+    description?: string
+  ): Promise<DataResponse<{ createdTodo: Todo }>> {
+    return this.fetchWrapper("/todos", {
+      method: "POST",
+      body: JSON.stringify({
+        title,
+        assignedToUuid,
+        teamId,
+        statusId,
+        priorityId,
+        description,
+      }),
     });
   }
 }

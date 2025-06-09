@@ -28,15 +28,19 @@ router.get("/mine", async (req: RequestWithUser, res, next) => {
   }
 });
 
-router.post("/", async (req, res, next) => {
+router.post("/", async (req: RequestWithUser, res, next) => {
   try {
-    const newTeam = req.body;
-    //Need to validate the person creating the team
-    const result = await createTeam(newTeam);
-    res.status(200).json({
-      status: "success",
-      data: { newTeam: result },
-    });
+    const user = req.user;
+    if (!user || !user.uuid) {
+      res.status(401).json({ status: "error", message: "Unauthorized" });
+    } else {
+      const teamLeadUUid = user.uuid;
+      const result = await createTeam(teamLeadUUid,req.body);
+      res.status(200).json({
+        status: "success",
+        data: { newTeam: result },
+      });
+    }
   } catch (error) {
     next(error);
   }
