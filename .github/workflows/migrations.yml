@@ -27,7 +27,7 @@ jobs:
           role-session-name: GitHub_to_AWS_via_FederatedOIDC
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Get private key secret
+      - name: Get private key secret # This step is present but its output is not used by Flyway or the tunnel anymore
         uses: aws-actions/aws-secretsmanager-get-secrets@v2
         with:
           secret-ids: |
@@ -45,14 +45,15 @@ jobs:
           mkdir ~/.ssh
           ssh-keyscan -H ${{ secrets.BASTION_HOST }} >> ~/.ssh/known_hosts
           eval `ssh-agent -s`
-          ssh -fN -v -L 127.0.0.1:5432:${{ env.CREDENTIALS_HOST }}:5432 ${{ secrets.BASTION_USER }}@${{ secrets.BASTION_HOST }} -i ssh_key.pem &
+          # ONLY CHANGE IS HERE: Use secrets.DB_HOST and secrets.DB_PORT for consistency
+          ssh -fN -v -L 127.0.0.1:${{ secrets.DB_PORT }}:${{ secrets.DB_HOST }}:${{ secrets.DB_PORT }} ${{ secrets.BASTION_USER }}@${{ secrets.BASTION_HOST }} -i ssh_key.pem &
 
       - name: Generate flyway config file
         run: |
           cat > flyway.generated.conf <<EOF
-          flyway.url=jdbc:postgresql://localhost:5432/${{ env.CREDENTIALS_DB_NAME }}
-          flyway.user=${{ env.CREDENTIALS_USERNAME }}
-          flyway.password=${{ env.CREDENTIALS_PASSWORD }}
+          flyway.url=jdbc:postgresql://localhost:${{ secrets.DB_PORT }}/${{ secrets.DB_NAME }}
+          flyway.user=${{ secrets.DB_USER }}
+          flyway.password=${{ secrets.DB_PASSWORD }}
           EOF
           cat database/flyway/flyway.conf >> flyway.generated.conf
 
