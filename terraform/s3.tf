@@ -1,6 +1,6 @@
-# S3 Bucket for Elastic Beanstalk
-resource "aws_s3_bucket" "todo_eb_source_bundle" {
-  bucket = "${lower(var.app_name)}-eb-source-bundles-${random_string.bucket_suffix.id}"
+#Bucket for Elastic Beanstalk source bundles
+resource "aws_s3_bucket" "todo_eb_source_bundle" { 
+  bucket = "${lower(var.app_name)}-e-source-bundles-${random_string.bucket_suffix.id}"
 
   tags = {
     Name = "${var.app_name}-EBSourceBundles"
@@ -23,12 +23,13 @@ resource "aws_s3_bucket_versioning" "todo_eb_source_bundle_versioning" {
   }
 }
 
-
+# An empty zip file for the initial Elastic Beanstalk application version
 resource "aws_s3_object" "empty_app" {
-  bucket = aws_s3_bucket.todo_eb_source_bundle.id
-  key    = "empty-app.zip"
+  bucket         = aws_s3_bucket.todo_eb_source_bundle.id
+  key            = "empty-app.zip"
   content_base64 = "UEsDBAoAAAAAAKuAgVcAAAAAAAAAAAAAAAAJAAAALnRvdW52b3JjUEsBAhQDCgAAAAAAgQCrVwAAAAAAAAAAAAAAAAkAAAAAAAAAAAAQAAAAAAAAAC50b3VudnJjUEsFBgAAAAABAAEANwAAAB8AAAAAAA=="
   content_type   = "application/zip"
+
 
   tags = {
     Name = "${var.app_name}-EmptyApp"

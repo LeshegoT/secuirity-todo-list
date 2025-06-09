@@ -1,47 +1,31 @@
+# variables.tf
+
 variable "aws_region" {
   description = "The AWS region to deploy resources into."
   type        = string
-  default     = "af-south-1"
+  default     = "af-south-1" # Example default, change as needed
+}
+
+variable "domain_name" {
+  description = "The domain name for the hosted zone and ACM certificate."
+  type        = string
+  default     = "todo-secure-list.xyz"
 }
 
 variable "app_name" {
-  description = "Name of the application."
+  description = "The name of the application."
   type        = string
-  default     = "app-todo"
+  default     = "todo-app"
 }
 
 variable "env_name" {
-  description = "Name of the Elastic Beanstalk environment."
+  description = "The name of the Elastic Beanstalk environment."
   type        = string
-  default     = "Production-todo"
-}
-
-variable "db_instance_class" {
-  description = "The instance type of the RDS database."
-  type        = string
-  default     = "db.t3.micro"
-}
-
-variable "db_name" {
-  description = "The name of the database to create."
-  type        = string
-  default     = "todoappdb"
-}
-
-variable "db_port" {
-  description = "Port for the RDS PostgreSQL database."
-  type        = number
-  default     = 5432
-}
-
-variable "db_engine_version" {
-  description = "The version of the PostgreSQL database engine."
-  type        = string
-  default     = "17.4"
+  default     = "production"
 }
 
 variable "vpc_cidr_block" {
-  description = "CIDR block for the VPC."
+  description = "The CIDR block for the VPC."
   type        = string
   default     = "10.0.0.0/16"
 }
@@ -55,16 +39,51 @@ variable "public_subnet_cidrs" {
 variable "private_subnet_cidrs" {
   description = "List of CIDR blocks for private subnets."
   type        = list(string)
-  default     = ["10.0.11.0/24", "10.0.12.0/24"]
+  default     = ["10.0.10.0/24", "10.0.11.0/24"]
+}
+
+variable "db_engine_version" {
+  description = "The version of the PostgreSQL database engine."
+  type        = string
+  default     = "17.4"
+}
+
+variable "db_instance_class" {
+  description = "The instance class for the RDS PostgreSQL instance."
+  type        = string
+  default     = "db.t3.micro"
+}
+
+variable "db_name" {
+  description = "The name of the PostgreSQL database."
+  type        = string
+  default     = "tododb"
 }
 
 variable "username" {
-  description = "Master username for the RDS instance"
+  description = "The master username for the PostgreSQL database."
   type        = string
-  sensitive   = true
+  default     = "masteruser"
 }
 
-variable "domain_name" {
-  description = "The custom domain name for your application"
+variable "db_port" {
+  description = "The port for the PostgreSQL database."
+  type        = number
+  default     = 5432
+}
+
+variable "ssh_key_name" {
+  description = "The port for the PostgreSQL database."
   type        = string
+  default     = "secuirity-bastion"
+}
+
+variable "emails" {
+  type = list(string)
+  default = [
+    "Repo.Talane@bbd.co.za",
+    "Tebogo.Motibana@bbd.co.za",
+    "Temwa.Nyirenda@bbd.co.za",
+    "Franco.DuBuisson@bbd.co.za"
+  ]
 }

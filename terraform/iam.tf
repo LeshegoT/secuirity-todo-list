@@ -1,4 +1,4 @@
-# IAM Roles and Policies
+# IAM Role for EC2 instances managed by Elastic Beanstalk
 resource "aws_iam_role" "todo_eb_ec2_role" {
   name = "${var.app_name}-elasticbeanstalk-ec2-role"
 
@@ -20,6 +20,7 @@ resource "aws_iam_role" "todo_eb_ec2_role" {
   }
 }
 
+# IAM Policy to allow EC2 instances to get DB secret from Secrets Manager
 resource "aws_iam_policy" "eb_secrets_access" {
   name = "${var.app_name}-eb-secrets-access"
 
@@ -37,6 +38,7 @@ resource "aws_iam_policy" "eb_secrets_access" {
   })
 }
 
+# IAM Policy to allow EC2 instances to get JWT secret from Secrets Manager
 resource "aws_iam_policy" "eb_jwt_secrets_access" {
   name = "${var.app_name}-eb-jwt-secrets-access"
 
@@ -54,16 +56,19 @@ resource "aws_iam_policy" "eb_jwt_secrets_access" {
   })
 }
 
+# Attach JWT secret access policy to EB EC2 role
 resource "aws_iam_role_policy_attachment" "attach_eb_jwt_secrets_policy" {
   role       = aws_iam_role.todo_eb_ec2_role.name
   policy_arn = aws_iam_policy.eb_jwt_secrets_access.arn
 }
 
+# Attach DB secret access policy to EB EC2 role
 resource "aws_iam_role_policy_attachment" "attach_eb_secrets_policy" {
   role       = aws_iam_role.todo_eb_ec2_role.name
   policy_arn = aws_iam_policy.eb_secrets_access.arn
 }
 
+# Attach standard Elastic Beanstalk managed policies to EC2 role
 resource "aws_iam_role_policy_attachment" "todo_eb_ec2_policy" {
   role       = aws_iam_role.todo_eb_ec2_role.name
   policy_arn = "arn:aws:iam::aws:policy/AWSElasticBeanstalkWebTier"
@@ -76,7 +81,7 @@ resource "aws_iam_role_policy_attachment" "todo_eb_ec2_s3_policy" {
 
 resource "aws_iam_role_policy_attachment" "todo_eb_ec2_secrets_manager_policy" {
   role       = aws_iam_role.todo_eb_ec2_role.name
-  policy_arn = "arn:aws:iam::aws:policy/SecretsManagerReadWrite"
+  policy_arn = "arn:aws:iam::aws:policy/SecretsManagerReadWrite" 
 }
 
 resource "aws_iam_instance_profile" "todo_eb_instance_profile" {
@@ -84,6 +89,7 @@ resource "aws_iam_instance_profile" "todo_eb_instance_profile" {
   role = aws_iam_role.todo_eb_ec2_role.name
 }
 
+# IAM Role for Elastic Beanstalk service itself
 resource "aws_iam_role" "todo_eb_service_role" {
   name = "${var.app_name}-elasticbeanstalk-service-role"
 
@@ -127,10 +133,10 @@ resource "aws_iam_role_policy_attachment" "eb_ec2_worker_tier_policy" {
 
 resource "aws_iam_role_policy_attachment" "eb_ec2_cloudwatch_policy" {
   role       = aws_iam_role.todo_eb_ec2_role.name
-  policy_arn = "arn:aws:iam::aws:policy/CloudWatchFullAccess"
+  policy_arn = "arn:aws:iam::aws:policy/CloudWatchFullAccess" 
 }
 
 resource "aws_iam_role_policy_attachment" "eb_ec2_ecr_readonly_policy" {
   role       = aws_iam_role.todo_eb_ec2_role.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly" 
 }

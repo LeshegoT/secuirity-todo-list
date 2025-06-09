@@ -1,12 +1,11 @@
-# Outputs
 output "elastic_beanstalk_environment_url" {
   description = "The URL of the Elastic Beanstalk environment."
-  value       = aws_elastic_beanstalk_environment.todo_env.cname
+  value       = aws_elastic_beanstalk_environment.todo_app_env.cname
 }
 
 output "elastic_beanstalk_environment_endpoint_url" {
   description = "The full URL endpoint of the Elastic Beanstalk environment."
-  value       = "http://${aws_elastic_beanstalk_environment.todo_env.cname}"
+  value       = "http://${aws_elastic_beanstalk_environment.todo_app_env.cname}"
 }
 
 output "rds_endpoint" {
@@ -46,10 +45,14 @@ output "private_subnet_ids" {
 
 output "s3_bucket_name" {
   description = "Name of the S3 bucket for Elastic Beanstalk source bundles."
-  value       = aws_s3_bucket.todo_eb_source_bundle.id
+  value       = aws_s3_bucket.todo_source_bundle.id
 }
 
-output "secrets_manager_jwt_secret_arn" { 
+output "secrets_manager_jwt_secret_arn" {
   description = "ARN of the Secrets Manager secret storing JWT secret."
   value       = aws_secretsmanager_secret.todo_jwt_secret.arn
+}
+
+output "bastion_ssh_command" {
+  value = "ssh -i ~/.ssh/${var.ssh_key_name}.pem ubuntu@${aws_instance.bastion.public_ip}"
 }
