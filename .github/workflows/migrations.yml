@@ -6,7 +6,8 @@ on:
       - main
     paths:
       - 'database/migrations/**'
-
+  
+  workflow_dispatch:
 permissions:
   contents: read
   id-token: write
