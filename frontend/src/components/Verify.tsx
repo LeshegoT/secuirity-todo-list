@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useLocation, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/authContext';
 import { ShieldCheckIcon, QrCodeIcon, KeyIcon } from '@heroicons/react/24/outline';
-import '../App.css'; // Ensure App.css is imported for styles
+import '../App.css'; 
 
 interface LocationState {
   registrationData?: {
@@ -46,7 +46,6 @@ const Verify: React.FC = () => {
       const result = await verify(userUuid, token);
 
       if (result.success) {
-        // Show success message and redirect to login
         navigate('/login', {
           state: {
             message: 'Two-factor authentication setup completed! You can now sign in.',

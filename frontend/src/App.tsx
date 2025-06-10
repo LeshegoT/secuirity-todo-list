@@ -1,7 +1,5 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import Login from './components/Login';
-import Register from './components/Register';
 import Dashboard from './pages/Dashboard';
 import Verify from './components/Verify';
 import { AuthProvider, useAuth } from './context/authContext';
@@ -47,14 +45,6 @@ const AppContent: React.FC = () => {
             element={
               <PublicRoute>
                 <LoginPage />
-              </PublicRoute>
-            }
-          />
-          <Route
-            path="/register"
-            element={
-              <PublicRoute>
-                <Register />
               </PublicRoute>
             }
           />
