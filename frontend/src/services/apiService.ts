@@ -49,36 +49,29 @@ async function handleResponse<T>(response: Response): Promise<T> {
   const contentType = response.headers.get("content-type");
   let data: any;
 
-  // Attempt to parse JSON if content type is JSON
   if (contentType && contentType.includes("application/json")) {
     try {
       data = await response.json();
     } catch (e) {
-      // If parsing fails, treat as generic text or empty
       data = {};
       console.error("Failed to parse JSON response:", e, response);
     }
   } else {
-    data = await response.text(); // Fallback for non-JSON responses
-    // Wrap text in an object to match expected data structure from axios responses
-    data = { message: data || "No response data" };
+    const text = await response.text();
+    data = { message: text || "No response data" };
   }
 
   if (!response.ok) {
-    // For fetch, non-2xx responses are NOT errors by default.
-    // We manually throw an error to simulate axios's behavior.
     const errorMessage =
       data.message || response.statusText || "Something went wrong";
     const error = new Error(errorMessage) as any;
     error.response = {
-      // Attach response details similar to axios for consistency with AuthContext
       status: response.status,
       data: data,
     };
     if (response.status === 401) {
-      // Simulate axios interceptor for 401 by redirecting
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
+      sessionStorage.removeItem("token");
+      sessionStorage.removeItem("user");
       window.location.href = "/login";
     }
     throw error;
@@ -93,15 +86,12 @@ class ApiService {
     this.baseURL = "/api";
   }
 
-  // With native fetch, you typically retrieve the token right before making the request
-  // as there's no global instance to configure like axios.
-  // These methods update localStorage directly, which the fetchWrapper then reads.
   setAuthToken(token: string): void {
-    localStorage.setItem("token", token);
+    sessionStorage.setItem("token", token);
   }
 
   clearAuthToken(): void {
-    localStorage.removeItem("token");
+    sessionStorage.removeItem("token");
   }
 
   private async fetchWrapper<T>(
@@ -109,7 +99,7 @@ class ApiService {
     options: RequestInit = {}
   ): Promise<T> {
     const url = `${this.baseURL}${endpoint}`;
-    const token = localStorage.getItem("token");
+    const token = sessionStorage.getItem("token");
 
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
@@ -128,14 +118,8 @@ class ApiService {
     return handleResponse<T>(response);
   }
 
-  async healthCheck(): Promise<{
-    status: string;
-    timestamp: string;
-    env: string;
-  }> {
-    return this.fetchWrapper("/health", {
-      method: "GET",
-    });
+  async healthCheck() {
+    return this.fetchWrapper("/health", { method: "GET" });
   }
 
   async register(
