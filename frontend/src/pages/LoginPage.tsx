@@ -55,7 +55,7 @@ export default function LoginPage() {
     password: "",
     confirmPassword: "",
   });
-  const [requiresTwoFactor, setRequiresTwoFactor] = useState(false);
+  const [, setRequiresTwoFactor] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [passwordStrength, setPasswordStrength] = useState({
