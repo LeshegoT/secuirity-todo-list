@@ -170,7 +170,7 @@ export async function canUserModifyTarget(
   const actor = await getUserByUUID(actorUUID);
   if (!actor) return false;
 
-  if (actor.userRoles.includes("admin")) {
+  if (actor.userRoles.includes("access_administrator")) {
     return true;
   }
 
