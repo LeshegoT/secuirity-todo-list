@@ -41,7 +41,7 @@ import {
   useTheme,
   Divider,
 } from "@mui/material"
-import { ArrowBack, Lock, LockOpen, Delete, Security, CheckCircle, Cancel, Groups } from "@mui/icons-material"
+import { ArrowBack, Lock, LockOpen, Delete, Security, CheckCircle, Cancel } from "@mui/icons-material"
 import "../App.css"
 
 interface UserManagement {
@@ -60,12 +60,6 @@ interface Role {
   name: string
 }
 
-interface Team {
-  id: number
-  name: string
-  is_lead: boolean
-}
-
 const UserManagement: React.FC = () => {
   const { user } = useAuth()
   const theme = useTheme()
@@ -73,24 +67,19 @@ const UserManagement: React.FC = () => {
 
   const [users, setUsers] = useState<UserManagement[]>([])
   const [roles, setRoles] = useState<Role[]>([])
-  const [teams, setTeams] = useState<Team[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedUser, setSelectedUser] = useState<UserManagement | null>(null)
   const [showRoleModal, setShowRoleModal] = useState(false)
-  const [showTeamModal, setShowTeamModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [selectedRoles, setSelectedRoles] = useState<string[]>([])
-  const [selectedTeams, setSelectedTeams] = useState<number[]>([])
   const [roleOperation, setRoleOperation] = useState<"add" | "remove" | "replace">("replace")
   const [actionLoading, setActionLoading] = useState(false)
 
-  // Role checks
-  const isAccessAdmin = user?.userRoles?.includes("access_administrator")
-  const isTeamLead = user?.userRoles?.includes("team_lead")
-  const isTeamMember = user?.userRoles?.includes("team_member")
+  const isAccessAdmin = user?.roles?.includes("access_administrator")
+  const isTeamLead = user?.roles?.includes("team_lead")
+  const isTeamMember = user?.roles?.includes("team_member")
 
-  // Determine user's access level
   const getAccessLevel = () => {
     if (isAccessAdmin) return "admin"
     if (isTeamLead) return "team_lead"
@@ -104,7 +93,6 @@ const UserManagement: React.FC = () => {
     if (isAccessAdmin) {
       loadRoles()
     }
-    loadTeams()
   }, [isAccessAdmin])
 
   const loadUsers = async () => {
@@ -130,29 +118,12 @@ const UserManagement: React.FC = () => {
     }
   }
 
-  const loadTeams = async () => {
-    try {
-      // For now, we'll create mock teams since the API might not have this endpoint yet
-      // You can replace this with actual API call when available
-      setTeams([
-        { id: 1, name: "Development Team", is_lead: false },
-        { id: 2, name: "Design Team", is_lead: false },
-        { id: 3, name: "Marketing Team", is_lead: false },
-        { id: 4, name: "Sales Team", is_lead: false },
-      ])
-    } catch (err: any) {
-      console.error("Error loading teams:", err)
-    }
-  }
-
-  // Check if current user can modify target user
   const canModifyUser = (targetUser: UserManagement) => {
     if (isAccessAdmin) return true
     if (isTeamLead && targetUser.uuid !== user?.uuid) return true
     return false
   }
 
-  // Check if current user can view target user
   const canViewUser = (targetUser: UserManagement) => {
     if (isAccessAdmin) return true
     if (isTeamLead) return true
@@ -212,40 +183,11 @@ const UserManagement: React.FC = () => {
     }
   }
 
-  const handleUpdateTeams = async () => {
-    if (!selectedUser) return
-
-    try {
-      setActionLoading(true)
-      // TODO: Implement actual team assignment API call
-      // await apiService.updateUserTeams(selectedUser.uuid, selectedTeams)
-
-      // For now, just show success message
-      console.log(`Assigning user ${selectedUser.name} to teams:`, selectedTeams)
-
-      setShowTeamModal(false)
-      setSelectedUser(null)
-      setSelectedTeams([])
-      setError(null)
-    } catch (err: any) {
-      setError(err.response?.data?.error || "Failed to update user teams")
-    } finally {
-      setActionLoading(false)
-    }
-  }
-
   const openRoleModal = (targetUser: UserManagement) => {
     if (!isAccessAdmin) return
     setSelectedUser(targetUser)
     setSelectedRoles(targetUser.userRoles)
     setShowRoleModal(true)
-  }
-
-  const openTeamModal = (targetUser: UserManagement) => {
-    if (!canModifyUser(targetUser)) return
-    setSelectedUser(targetUser)
-    setSelectedTeams([]) // TODO: Load user's current teams
-    setShowTeamModal(true)
   }
 
   const openDeleteModal = (targetUser: UserManagement) => {
@@ -286,7 +228,6 @@ const UserManagement: React.FC = () => {
     }
   }
 
-  // Mobile Card Component
   const UserCard = ({ targetUser }: { targetUser: UserManagement }) => (
     <Card sx={{ mb: 2 }}>
       <CardContent>
@@ -376,15 +317,6 @@ const UserManagement: React.FC = () => {
             </Tooltip>
           )}
 
-          {/* Team Assignment - For team leads and admins */}
-          {(isAccessAdmin || isTeamLead) && canModifyUser(targetUser) && (
-            <Tooltip title="Assign to Team">
-              <IconButton size="small" onClick={() => openTeamModal(targetUser)} disabled={actionLoading}>
-                <Groups />
-              </IconButton>
-            </Tooltip>
-          )}
-
           {/* Lock/Unlock */}
           {canModifyUser(targetUser) && (
             <Tooltip title={targetUser.isActive ? "Lock User" : "Unlock User"}>
@@ -429,7 +361,6 @@ const UserManagement: React.FC = () => {
     <Box sx={{ display: "flex" }}>
       <CssBaseline />
 
-      {/* Blue Header Bar - matching dashboard */}
       <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}>
         <Toolbar>
           <IconButton color="inherit" onClick={goBackToDashboard} sx={{ mr: 2 }}>
@@ -447,17 +378,14 @@ const UserManagement: React.FC = () => {
         </Toolbar>
       </AppBar>
 
-      {/* Main Content */}
       <Box component="main" sx={{ flexGrow: 1, p: isMobile ? 2 : 3, mt: 8 }}>
         <Container maxWidth="xl">
-          {/* Error Alert */}
           {error && (
             <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>
               {error}
             </Alert>
           )}
 
-          {/* Header with refresh button */}
           <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3 }}>
             <Typography variant="h6">
               {accessLevel === "team_member" ? "My Profile" : `Users (${users.filter((u) => canViewUser(u)).length})`}
@@ -467,9 +395,7 @@ const UserManagement: React.FC = () => {
             </Button>
           </Box>
 
-          {/* Responsive Content */}
           {isMobile ? (
-            // Mobile Card Layout
             <Box>
               {users
                 .filter((u) => canViewUser(u))
@@ -478,7 +404,6 @@ const UserManagement: React.FC = () => {
                 ))}
             </Box>
           ) : (
-            // Desktop Table Layout
             <Paper sx={{ width: "100%", overflow: "hidden" }}>
               <TableContainer sx={{ maxHeight: "calc(100vh - 300px)" }}>
                 <Table stickyHeader>
@@ -579,19 +504,6 @@ const UserManagement: React.FC = () => {
                                 </Tooltip>
                               )}
 
-                              {/* Team Assignment - For team leads and admins */}
-                              {(isAccessAdmin || isTeamLead) && canModifyUser(targetUser) && (
-                                <Tooltip title="Assign to Team">
-                                  <IconButton
-                                    size="small"
-                                    onClick={() => openTeamModal(targetUser)}
-                                    disabled={actionLoading}
-                                  >
-                                    <Groups />
-                                  </IconButton>
-                                </Tooltip>
-                              )}
-
                               {/* Lock/Unlock */}
                               {canModifyUser(targetUser) && (
                                 <Tooltip title={targetUser.isActive ? "Lock User" : "Unlock User"}>
@@ -680,43 +592,6 @@ const UserManagement: React.FC = () => {
             disabled={actionLoading || selectedRoles.length === 0}
           >
             {actionLoading ? <CircularProgress size={20} /> : "Update Roles"}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Team Assignment Modal */}
-      <Dialog open={showTeamModal} onClose={() => setShowTeamModal(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Assign Teams for {selectedUser?.name}</DialogTitle>
-        <DialogContent>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Select the teams this user should be assigned to:
-          </Typography>
-
-          <Box sx={{ maxHeight: 300, overflow: "auto" }}>
-            {teams.map((team) => (
-              <FormControlLabel
-                key={team.id}
-                control={
-                  <Checkbox
-                    checked={selectedTeams.includes(team.id)}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setSelectedTeams([...selectedTeams, team.id])
-                      } else {
-                        setSelectedTeams(selectedTeams.filter((t) => t !== team.id))
-                      }
-                    }}
-                  />
-                }
-                label={team.name}
-              />
-            ))}
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setShowTeamModal(false)}>Cancel</Button>
-          <Button onClick={handleUpdateTeams} variant="contained" disabled={actionLoading}>
-            {actionLoading ? <CircularProgress size={20} /> : "Assign Teams"}
           </Button>
         </DialogActions>
       </Dialog>

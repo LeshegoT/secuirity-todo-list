@@ -91,8 +91,14 @@ router.post('/login', async (req: LoginRequestBody, res: Response<LoginResponse>
       throw new Error('JWT_SECRET not configured');
     }
 
+    const userWithRoles = await getUserByUUID(user.uuid)
+ 
+    if (!userWithRoles) {
+      res.status(500).json({ message: "Failed to fetch user details" })
+      return
+    }
     const token = jwt.sign(
-      { uuid: user.uuid, name: user.name, email: user.email }, 
+      { uuid: user.uuid, name: user.name, email: user.email, roles: userWithRoles.userRoles}, 
       process.env.JWT_SECRET, 
       { expiresIn: '1h', algorithm: 'HS256'}
     );
