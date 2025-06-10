@@ -11,6 +11,7 @@ import type {
   UserResponse,
   ApiResponse 
 } from '../types/types.js';
+import { getUserByUUID } from '../queries/users.js';
 
 const router = Router();
 
@@ -96,12 +97,19 @@ router.post('/login', async (req: LoginRequestBody, res: Response<LoginResponse>
       { expiresIn: '1h', algorithm: 'HS256'}
     );
     
+    const userWithRoles = await getUserByUUID(user.uuid)
 
-    const userResponse: UserResponse = {
-      uuid: user.uuid,
-      name: user.name,
-      email: user.email
-    };
+    if (!userWithRoles) {
+      res.status(500).json({ message: "Failed to fetch user details" })
+      return
+    }
+
+    const userResponse: UserResponse & { userRoles: string[] } = {
+      uuid: userWithRoles.uuid,
+      name: userWithRoles.name,
+      email: userWithRoles.email,
+      userRoles: userWithRoles.userRoles, 
+    }
 
     res.json({ 
       token,

@@ -16,11 +16,11 @@ import {
   CircularProgress,
 } from "@mui/material";
 import Grid from "@mui/material/Grid";
-import { Settings, Logout } from "@mui/icons-material";
+import { Settings, Logout, People } from "@mui/icons-material";
 import TeamSidebar from "../components/TeamSidebar";
 import TaskList from "../components/TaskList";
 import { apiService } from "../services/apiService";
-import { Status, Team, Priority, User } from "../types";
+import type { Status, Team, Priority, User } from "../types";
 import { useAuth } from "../context/authContext";
 
 export default function Dashboard() {
@@ -30,7 +30,7 @@ export default function Dashboard() {
   const [priorities, setPriorities] = useState<Priority[]>([]);
   const [statuses, setStatuses] = useState<Status[]>([]);
   const [teams, setUserTeams] = useState<Team[]>([]);
-  const [loading, setLoading] = useState(true); 
+  const [loading, setLoading] = useState(true);
   const { logout } = useAuth();
   const open = Boolean(anchorEl);
 
@@ -81,7 +81,7 @@ export default function Dashboard() {
           alignItems: "center",
         }}
       >
-       <CircularProgress /> 
+        <CircularProgress />
       </Box>
     );
   }
@@ -129,14 +129,24 @@ export default function Dashboard() {
                 </Typography>
               </Box>
             </MenuItem>
+            <MenuItem
+              onClick={() => {
+                handleClose();
+                window.location.href = "/users";
+              }}
+            >
+              <People fontSize="small" sx={{ mr: 1 }} /> User Management
+            </MenuItem>
             <MenuItem onClick={handleClose}>
               <Settings fontSize="small" sx={{ mr: 1 }} /> Settings
             </MenuItem>
-            <MenuItem onClick={()=> {
-              handleClose();
-              logout();
-              window.location.href = "/login";
-              }}>
+            <MenuItem
+              onClick={() => {
+                handleClose();
+                logout();
+                window.location.href = "/login";
+              }}
+            >
               <Logout fontSize="small" sx={{ mr: 1 }} /> Logout
             </MenuItem>
           </Menu>

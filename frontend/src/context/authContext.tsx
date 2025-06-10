@@ -1,20 +1,43 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { apiService } from '../services/apiService';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+} from "react";
+import { apiService } from "../services/apiService";
+import UserManagement from "../components/UserManagement";
 
 interface User {
-  id: string;
+  uuid: string;
   name: string;
   email: string;
+  userRoles?: string[];
 }
 
 interface AuthContextType {
   user: User | null;
   token: string | null;
   loading: boolean;
-  login: (email: string, password: string, totpToken?: string) => Promise<{ success: boolean; requiresTwoFactor?: boolean; message: string }>;
+  login: (
+    email: string,
+    password: string,
+    totpToken?: string
+  ) => Promise<{
+    success: boolean;
+    requiresTwoFactor?: boolean;
+    message: string;
+  }>;
   logout: () => void;
-  register: (name: string, email: string, password: string) => Promise<{ success: boolean; data?: any; message: string }>;
-  verify: (userId: string, token: string) => Promise<{ success: boolean; message: string }>;
+  register: (
+    name: string,
+    email: string,
+    password: string
+  ) => Promise<{ success: boolean; data?: any; message: string }>;
+  verify: (
+    userId: string,
+    token: string
+  ) => Promise<{ success: boolean; message: string }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -22,7 +45,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 };
@@ -61,14 +84,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const response = await apiService.login(email, password, totpToken);
 
       if (response.requiresTwoFactor) {
-        return { success: false, requiresTwoFactor: true, message: response.message };
+        return {
+          success: false,
+          requiresTwoFactor: true,
+          message: response.message,
+        };
       }
 
       if (response.token && response.user) {
         sessionStorage.setItem("token", response.token);
         sessionStorage.setItem("user", JSON.stringify(response.user));
         setToken(response.token);
-        setUser(response.user);
+        console.log("Login response user:", response.user);
+        setUser(response.user as unknown as User);
         apiService.setAuthToken(response.token);
         return { success: true, message: response.message };
       }
@@ -77,7 +105,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } catch (error: any) {
       return {
         success: false,
-        message: error.response?.data?.message || error.message || "Login failed.",
+        message:
+          error.response?.data?.message || error.message || "Login failed.",
       };
     }
   };
@@ -93,7 +122,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } catch (error: any) {
       return {
         success: false,
-        message: error.response?.data?.message || error.message || "Registration failed.",
+        message:
+          error.response?.data?.message ||
+          error.message ||
+          "Registration failed.",
       };
     }
   };
@@ -103,12 +135,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const response = await apiService.verify(userId, totpToken);
       return {
         success: response.data.verified,
-        message: response.message
+        message: response.message,
       };
     } catch (error: any) {
       return {
         success: false,
-        message: error.response?.data?.message || error.message || 'Verification failed. Please try again.'
+        message:
+          error.response?.data?.message ||
+          error.message ||
+          "Verification failed. Please try again.",
       };
     }
   };
@@ -128,12 +163,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     login,
     logout,
     register,
-    verify
+    verify,
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
