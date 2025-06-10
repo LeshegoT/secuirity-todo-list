@@ -17,7 +17,7 @@ import {
 } from "../middlewares/uuidValidation.js";
 import {
   checkUserRoles,
-  requireAdmin,
+  requireAccessAdmin,
   requireTeamLeadOrAdmin,
   requireAnyRole,
   type RoleRequest,
@@ -26,16 +26,16 @@ import {
 export const createUserRoutes = (): Router => {
   const router = Router();
 
-  // GET /roles - Get all available roles (admin / team lead only)
+  // GET /roles - Get all available roles (access_administrator only)
   router.get(
     "/roles",
     requireUUIDAuth,
     checkUserRoles,
     async (req: RoleRequest, res: Response) => {
       try {
-        if (!req.isAdmin && !req.isTeamLead) {
+        if (!req.isAccessAdmin) {
           return res.status(403).json({
-            error: "Admin or Team Lead access required",
+            error: "Access administrator access required",
             code: "INSUFFICIENT_PERMISSIONS",
           });
         }
@@ -63,7 +63,7 @@ export const createUserRoutes = (): Router => {
       const authUUID = (req as any).authenticatedUUID;
       let users;
 
-      if (req.isAdmin) {
+      if (req.isAccessAdmin) {
         users = await getAllActiveUsers();
       } else if (req.isTeamLead) {
         users = await getUsersInTeamLedBy(authUUID);
@@ -77,14 +77,14 @@ export const createUserRoutes = (): Router => {
         users = user ? [user] : [];
       }
 
-      res.json({
+      return res.json({
         success: true,
         data: users,
         count: users.length,
       });
     } catch (error) {
       console.error("Error fetching users:", error);
-      res.status(500).json({
+      return res.status(500).json({
         error: "Internal server error",
         code: "FETCH_USERS_ERROR",
         details: error instanceof Error ? error.message : "Unknown error",
@@ -103,7 +103,7 @@ export const createUserRoutes = (): Router => {
         const targetUUID = req.validatedUUID!;
 
         const canView =
-          req.isAdmin ||
+          req.isAccessAdmin ||
           authUUID === targetUUID ||
           (req.isTeamLead && (await canUserModifyTarget(authUUID, targetUUID)));
 
@@ -136,7 +136,7 @@ export const createUserRoutes = (): Router => {
     }
   );
 
-  // PUT /users/:id/roles - Assign/remove roles (admin or team lead for their team)
+  // PUT /users/:id/roles - Assign/remove roles (access_administrator or team lead for their team)
   router.put(
     "/:id/roles",
     validateUUID("id"),
@@ -169,9 +169,16 @@ export const createUserRoutes = (): Router => {
           });
         }
 
-        if (!req.isAdmin && roles.includes("admin")) {
+        if (!req.isAccessAdmin && roles.includes("access_administrator")) {
           return res.status(403).json({
-            error: "Only admins can assign admin role",
+            error: "Only Access Administrators can assign the Access Administrator role",
+            code: "INSUFFICIENT_PERMISSIONS",
+          });
+        }
+
+          if (!req.isAccessAdmin && roles.includes("team_lead")) {
+          return res.status(403).json({
+            error: "Only Access Administrators can assign the Team Lead role",
             code: "INSUFFICIENT_PERMISSIONS",
           });
         }
@@ -231,11 +238,11 @@ export const createUserRoutes = (): Router => {
     }
   );
 
-  // PUT /users/:id/lock - Lock/unlock user account (admin or team lead for their team)
+  // PUT /users/:id/lock - Lock/unlock user account (access_administrator only)
   router.put(
     "/:id/lock",
     validateUUID("id"),
-    requireTeamLeadOrAdmin,
+    requireAccessAdmin,
     async (req: RoleRequest, res: Response) => {
       try {
         const { isActive } = req.body;
@@ -288,7 +295,7 @@ export const createUserRoutes = (): Router => {
     }
   );
 
-  // DELETE /users/:id - Soft delete user (admin or team lead for their team)
+  // DELETE /users/:id - Soft delete user (access_administrator or team lead for their team)
   router.delete(
     "/:id",
     validateUUID("id"),
@@ -349,7 +356,7 @@ export const createUserRoutes = (): Router => {
 
 
         const canView =
-          req.isAdmin ||
+          req.isAccessAdmin ||
           authUUID === targetUUID ||
           (req.isTeamLead && (await canUserModifyTarget(authUUID, targetUUID)));
 

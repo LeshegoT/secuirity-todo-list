@@ -4,7 +4,7 @@ import type { UUIDRequest } from "./uuidValidation.js";
 
 export interface RoleRequest extends UUIDRequest {
   userRoles?: string[];
-  isAdmin?: boolean;
+  isAccessAdmin?: boolean;
   isTeamLead?: boolean;
   isTeamMember?: boolean;
 }
@@ -34,7 +34,7 @@ export const checkUserRoles = async (
     }
 
     req.userRoles = user.userRoles || [];
-    req.isAdmin = user.userRoles?.includes("admin") || false;
+    req.isAccessAdmin = user.userRoles?.includes("access_administrator") || false;
     req.isTeamLead = user.userRoles?.includes("team_lead") || false;
     req.isTeamMember = user.userRoles?.includes("team_member") || false;
 
@@ -48,14 +48,14 @@ export const checkUserRoles = async (
   }
 };
 
-export const requireAdmin = (
+export const requireAccessAdmin = (
   req: RoleRequest,
   res: Response,
   next: NextFunction
 ) => {
-  if (!req.isAdmin) {
+  if (!req.isAccessAdmin) {
     return res.status(403).json({
-      error: "Admin access required",
+      error: "Access administrator access required",
       code: "INSUFFICIENT_PERMISSIONS",
     });
   }
@@ -67,9 +67,9 @@ export const requireTeamLeadOrAdmin = (
   res: Response,
   next: NextFunction
 ) => {
-  if (!req.isAdmin && !req.isTeamLead) {
+  if (!req.isAccessAdmin && !req.isTeamLead) {
     return res.status(403).json({
-      error: "Team lead or admin access required",
+      error: "Team lead or access administrator access required",
       code: "INSUFFICIENT_PERMISSIONS",
     });
   }
