@@ -1,5 +1,4 @@
 import express, { Application, Request, Response, NextFunction } from 'express';
-import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -20,7 +19,22 @@ const __dirname = path.dirname(__filename);
 const app: Application = express();
 
 app.use(express.json({ limit: '10mb' }));
-app.use(helmet());
+app.use((req: Request, res: Response, next: NextFunction) => {
+  res.setHeader("Content-Security-Policy",
+    "default-src 'self'; " +
+    "script-src 'self'; " +
+    "style-src 'self' 'unsafe-inline'; " +
+    "img-src 'self' data:; " +
+    "font-src 'self'; " +
+    "connect-src 'self'; " +
+    "frame-src 'none'; " +
+    "object-src 'none'; " +
+    "base-uri 'self'; " +
+    "form-action 'self';"
+  );
+  next();
+});
+
 app.set('trust proxy', 1);
 
 const apiLimiter = rateLimit({

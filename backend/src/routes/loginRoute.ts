@@ -93,7 +93,7 @@ router.post('/login', async (req: LoginRequestBody, res: Response<LoginResponse>
     const token = jwt.sign(
       { uuid: user.uuid, email: user.email }, 
       process.env.JWT_SECRET, 
-      { expiresIn: '1h' }
+      { expiresIn: '1h', algorithm: 'HS256'}
     );
     
 

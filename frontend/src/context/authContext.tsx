@@ -37,21 +37,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check for existing token on app load
-    const storedToken = localStorage.getItem('token');
- //   const storedUser = localStorage.getItem('user');
+    const storedToken = sessionStorage.getItem("token");
+    const storedUser = sessionStorage.getItem("user");
 
- //if (storedToken && storedUser)
- if (storedToken)  {
+    if (storedToken && storedUser) {
       try {
-   //     const parsedUser = JSON.parse(storedUser);
+        const parsedUser = JSON.parse(storedUser);
         setToken(storedToken);
-     //   setUser(parsedUser);
-        apiService.setAuthToken(storedToken); // Set token in apiService (now updates localStorage)
+        setUser(parsedUser);
+        apiService.setAuthToken(storedToken);
       } catch (error) {
-        console.error('Error parsing stored user data:', error);
-        localStorage.removeItem('token');
-       // localStorage.removeItem('user');
+        console.error("Failed to parse session user:", error);
+        sessionStorage.removeItem("token");
+        sessionStorage.removeItem("user");
       }
     }
 
@@ -67,20 +65,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
 
       if (response.token && response.user) {
+        sessionStorage.setItem("token", response.token);
+        sessionStorage.setItem("user", JSON.stringify(response.user));
         setToken(response.token);
         setUser(response.user);
-        localStorage.setItem('token', response.token);
-        localStorage.setItem('user', JSON.stringify(response.user));
-        apiService.setAuthToken(response.token); // Set token in apiService (now updates localStorage)
+        apiService.setAuthToken(response.token);
         return { success: true, message: response.message };
       }
 
       return { success: false, message: response.message };
     } catch (error: any) {
-      // Adjusted to be compatible with the custom error structure from fetchWrapper
       return {
         success: false,
-        message: error.response?.data?.message || error.message || 'Login failed. Please try again.'
+        message: error.response?.data?.message || error.message || "Login failed.",
       };
     }
   };
@@ -91,13 +88,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       return {
         success: true,
         data: response.data,
-        message: 'Registration successful! Please set up your 2FA.'
+        message: "Registration successful! Please set up your 2FA.",
       };
     } catch (error: any) {
-      // Adjusted to be compatible with the custom error structure from fetchWrapper
       return {
         success: false,
-        message: error.response?.data?.message || error.message || 'Registration failed. Please try again.'
+        message: error.response?.data?.message || error.message || "Registration failed.",
       };
     }
   };
@@ -110,7 +106,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         message: response.message
       };
     } catch (error: any) {
-      // Adjusted to be compatible with the custom error structure from fetchWrapper
       return {
         success: false,
         message: error.response?.data?.message || error.message || 'Verification failed. Please try again.'
@@ -121,9 +116,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const logout = () => {
     setUser(null);
     setToken(null);
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    apiService.clearAuthToken(); // Clear token in apiService (now clears localStorage)
+    sessionStorage.removeItem("token");
+    sessionStorage.removeItem("user");
+    apiService.clearAuthToken();
   };
 
   const value: AuthContextType = {
