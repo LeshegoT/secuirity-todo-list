@@ -24,22 +24,19 @@ import type { Status, Team, Priority, User } from "../types";
 import { useAuth } from "../context/authContext";
 
 export default function Dashboard() {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [selectedTeam, setSelectedTeam] = useState<number | null>(null);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [priorities, setPriorities] = useState<Priority[]>([]);
   const [statuses, setStatuses] = useState<Status[]>([]);
   const [teams, setUserTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
-  const { logout } = useAuth();
+
+  const { user, logout, loading: authLoading } = useAuth();
   const open = Boolean(anchorEl);
 
   useEffect(() => {
     const init = async () => {
-      const storedUser = sessionStorage.getItem("user");
-      if (storedUser) {
-        setCurrentUser(JSON.parse(storedUser));
-      } else {
+      if (!user) {
         setLoading(false);
         return;
       }
@@ -61,7 +58,7 @@ export default function Dashboard() {
     };
 
     init();
-  }, []);
+  }, [user]);
 
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -71,7 +68,7 @@ export default function Dashboard() {
     setAnchorEl(null);
   };
 
-  if (loading || !currentUser) {
+  if (loading || authLoading || !user) {
     return (
       <Box
         sx={{
@@ -105,12 +102,13 @@ export default function Dashboard() {
             aria-haspopup="true"
             aria-expanded={open ? "true" : undefined}
           >
-            <Avatar sx={{ width: 32, height: 32 }} src={currentUser.avatar}>
-              {currentUser.name
-                .split(" ")
-                .map((n) => n[0])
-                .join("")}
+            <Avatar sx={{ width: 32, height: 32 }} src={user?.avatar}>
+              {(user?.name || "") // Accessing user.name here
+              .split(" ")
+              .map((n) => n[0])
+              .join("") || "?"}
             </Avatar>
+
           </IconButton>
           <Menu
             anchorEl={anchorEl}
@@ -123,9 +121,9 @@ export default function Dashboard() {
           >
             <MenuItem disabled>
               <Box sx={{ display: "flex", flexDirection: "column" }}>
-                <Typography variant="subtitle2">{currentUser.name}</Typography>
+                <Typography variant="subtitle2">{user.name}</Typography>
                 <Typography variant="caption" color="text.secondary">
-                  {currentUser.email}
+                  {user.email} 
                 </Typography>
               </Box>
             </MenuItem>
@@ -158,7 +156,7 @@ export default function Dashboard() {
             <Grid>
               <TeamSidebar
                 teams={teams}
-                currentUser={currentUser}
+                currentUser={user}
                 selectedTeam={selectedTeam}
                 onSelectTeam={setSelectedTeam}
               />
@@ -167,7 +165,7 @@ export default function Dashboard() {
               <TaskList
                 todos={teams.flatMap((el) => el.todos)}
                 teams={teams}
-                currentUser={currentUser}
+                currentUser={user}
                 selectedTeam={selectedTeam}
                 statuses={statuses}
                 priorities={priorities}

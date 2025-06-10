@@ -1,22 +1,9 @@
-import React, {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  ReactNode,
-} from "react";
+import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { apiService } from "../services/apiService";
-import UserManagement from "../components/UserManagement";
-
-interface User {
-  uuid: string;
-  name: string;
-  email: string;
-  userRoles?: string[];
-}
+import { decodeToken, DecodedUser } from "../utils/jwtUtils";
 
 interface AuthContextType {
-  user: User | null;
+  user: DecodedUser | null;
   token: string | null;
   loading: boolean;
   login: (
@@ -55,24 +42,25 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
+  const [user, setUser] = useState<DecodedUser | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const storedToken = sessionStorage.getItem("token");
-    const storedUser = sessionStorage.getItem("user");
 
-    if (storedToken && storedUser) {
-      try {
-        const parsedUser = JSON.parse(storedUser);
+    console.log("Stored token:", storedToken);
+
+    if (storedToken) {
+      const decoded = decodeToken(storedToken);
+      console.log("Decoded token:", decoded);
+
+      if (decoded) {
         setToken(storedToken);
-        setUser(parsedUser);
+        setUser(decoded);
         apiService.setAuthToken(storedToken);
-      } catch (error) {
-        console.error("Failed to parse session user:", error);
+      } else {
         sessionStorage.removeItem("token");
-        sessionStorage.removeItem("user");
       }
     }
 
@@ -91,14 +79,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         };
       }
 
-      if (response.token && response.user) {
-        sessionStorage.setItem("token", response.token);
-        sessionStorage.setItem("user", JSON.stringify(response.user));
-        setToken(response.token);
-        console.log("Login response user:", response.user);
-        setUser(response.user as unknown as User);
-        apiService.setAuthToken(response.token);
-        return { success: true, message: response.message };
+      if (response.token) {
+        const decoded = decodeToken(response.token);
+        if (decoded) {
+          sessionStorage.setItem("token", response.token);
+          setToken(response.token);
+          setUser(decoded);
+          apiService.setAuthToken(response.token);
+          return { success: true, message: response.message };
+        }
       }
 
       return { success: false, message: response.message };
@@ -149,22 +138,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const logout = () => {
-    setUser(null);
     setToken(null);
+    setUser(null);
     sessionStorage.removeItem("token");
-    sessionStorage.removeItem("user");
     apiService.clearAuthToken();
   };
 
-  const value: AuthContextType = {
-    user,
-    token,
-    loading,
-    login,
-    logout,
-    register,
-    verify,
-  };
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={{ user, token, loading, login, logout, register, verify }}>
+      {children}
+    </AuthContext.Provider>
+  );
 };

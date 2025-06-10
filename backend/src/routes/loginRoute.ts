@@ -92,28 +92,20 @@ router.post('/login', async (req: LoginRequestBody, res: Response<LoginResponse>
     }
 
     const token = jwt.sign(
-      { uuid: user.uuid, email: user.email }, 
+      { uuid: user.uuid, name: user.name, email: user.email }, 
       process.env.JWT_SECRET, 
       { expiresIn: '1h', algorithm: 'HS256'}
     );
     
-    const userWithRoles = await getUserByUUID(user.uuid)
 
-    if (!userWithRoles) {
-      res.status(500).json({ message: "Failed to fetch user details" })
-      return
-    }
-
-    const userResponse: UserResponse & { userRoles: string[] } = {
-      uuid: userWithRoles.uuid,
-      name: userWithRoles.name,
-      email: userWithRoles.email,
-      userRoles: userWithRoles.userRoles, 
-    }
+    const userResponse: UserResponse = {
+      uuid: user.uuid,
+      name: user.name,
+      email: user.email
+    };
 
     res.json({ 
       token,
-      user: userResponse,
       message: 'Login successful'
     });
 
