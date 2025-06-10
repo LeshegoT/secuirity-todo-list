@@ -18,7 +18,9 @@ function transformRawTodoToTodoResponse(rawTodo: RawTodo): TodoResponse {
     createdAt: rawTodo.createdAt,
     createdBy: rawTodo.createdBy,
     description: rawTodo.description,
-    isActive: rawTodo.isActive
+    isActive: rawTodo.isActive,
+    lastModifiedAt: rawTodo.lastModifiedAt,
+    lastModifiedBy: rawTodo.lastModifiedBy
   };
 
   const assignedToUser: UserInTodoResponse | null = rawTodo.assignedToId ? {
@@ -78,25 +80,34 @@ export async function getTodos(
       t.created_by AS "createdBy",
       t.description,
       t.is_active AS "isActive",
+      t.last_modified_at AS "lastModifiedAt",
+      t.last_modified_by AS "lastModifiedBy",
+      um.name AS "lastModifiedByName",
+      um.email AS "lastModifiedByEmail",
+      um.uuid AS "lastModifiedByUuid",
       us.name AS "assignedToName",
       us.email AS "assignedToEmail",
+      us.uuid AS "assignedToUuid",
       ts.name AS "statusName",
       tp.name AS "priorityName",
       uc.name AS "createdByName",
       uc.email AS "createdByEmail",
+      uc.uuid AS "createdByUuid",
       teams.name AS "teamName"
     FROM
         todos AS t
-            LEFT JOIN
-        users AS us ON t.assigned_to_id = us.id
-            LEFT JOIN
-        todo_statuses AS ts ON t.status_id = ts.id
-            LEFT JOIN
-        todo_priorities AS tp ON t.priority_id = tp.id
-            LEFT JOIN
-        users AS uc ON t.created_by = uc.id
-            LEFT JOIN
-        teams AS teams ON teams.id = t.team_id
+        LEFT JOIN
+            users AS us ON t.assigned_to_id = us.id
+        LEFT JOIN
+            todo_statuses AS ts ON t.status_id = ts.id
+        LEFT JOIN
+            todo_priorities AS tp ON t.priority_id = tp.id
+        LEFT JOIN
+            users AS uc ON t.created_by = uc.id
+        LEFT JOIN
+            teams AS teams ON teams.id = t.team_id
+        LEFT JOIN
+            users AS um ON t.last_modified_by = um.id
   `;
 
   const params: (number)[] = [];
@@ -158,7 +169,9 @@ export async function createTodo(createTodoPayload: CreateTodoPayload): Promise<
       created_at,
       created_by,
       description,
-      is_active
+      is_active,
+      last_modified_at,
+      last_modified_by
     )
     VALUES (
       $1,
@@ -169,7 +182,9 @@ export async function createTodo(createTodoPayload: CreateTodoPayload): Promise<
       CURRENT_TIMESTAMP,
       $6,
       $7,
-      true
+      true,
+      CURRENT_TIMESTAMP,
+      $6
    )
     RETURNING
       id;
@@ -200,9 +215,9 @@ export async function createTodo(createTodoPayload: CreateTodoPayload): Promise<
 }
 
 export async function updateTodo(id: number, updateTodoPayload: UpdateTodoPayload): Promise<TodoResponse> {
-  const params: (number | string | boolean)[] = [id];
-  const setSqlQuery = [];
-  let paramIndex = 2;
+  const params: (number | string | boolean)[] = [id, updateTodoPayload.lastModifiedBy];
+  const setSqlQuery = [`last_modified_by = $${2}`, `last_modified_at = NOW()`];
+  let paramIndex = 3;
 
   if (updateTodoPayload.title) {
     setSqlQuery.push(`title = $${paramIndex}`);

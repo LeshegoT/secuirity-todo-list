@@ -1,5 +1,11 @@
 ALTER TABLE todos
-ADD COLUMN last_modified_at DATE;
+DROP COLUMN created_at;
+
+ALTER TABLE todos
+ADD COLUMN created_at TIMESTAMP;
+
+ALTER TABLE todos
+ADD COLUMN last_modified_at TIMESTAMP;
 
 ALTER TABLE todos
 ADD COLUMN last_modified_by INT;

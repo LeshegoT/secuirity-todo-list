@@ -188,21 +188,17 @@ router.patch('/:id', async (req, res) => {
       return res.status(401).json({ message: `You are not authorized to update todo with id: ${id}.` });
     }
 
-    const payload: UpdateTodoPayload = req.body;
+    const payload: UpdateTodoPayload = { ...req.body, lastModifiedBy: currentUser.id};
 
     const updatedTodo = await updateTodo(<number>id, payload);
 
     return res.status(200).json(updatedTodo);
   } catch (error: any) {
-    if (error instanceof UnauthorizedError) {
+    if (error instanceof UnauthorizedError || error instanceof InvalidIdError) {
       return res.status(error.statusCode).json({ message: `${error.message}: ${error.details}` });
     }
 
-    if (error instanceof InvalidIdError) {
-      return res.status(error.statusCode).json({ message: `${error.message}: ${error.details}` });
-    }
-
-    return res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ message: error.message });
   }
 });
 
@@ -233,6 +229,7 @@ router.patch('/:id/deactivate', async (req, res) => {
     }
 
     const payload: UpdateTodoPayload = {
+      lastModifiedBy: currentUser.id,
       isActive: false
     };
 

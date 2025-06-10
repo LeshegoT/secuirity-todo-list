@@ -9,4 +9,6 @@ export interface Todo {
   createdBy: number;
   description: string;
   isActive: boolean;
+  lastModifiedAt: Date;
+  lastModifiedBy: number;
 }

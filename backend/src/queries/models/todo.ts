@@ -13,6 +13,8 @@ export interface RawTodo {
     createdBy: number;
     description: string;
     isActive: boolean;
+    lastModifiedAt: Date;
+    lastModifiedBy: number;
     assignedToName: string;
     assignedToEmail: string;
     teamName: string;
@@ -48,6 +50,7 @@ export interface UpdateTodoPayload {
     priorityId?: number;
     description?: string;
     isActive?: boolean;
+    lastModifiedBy: number;
 }
 
 export interface UserResponse {

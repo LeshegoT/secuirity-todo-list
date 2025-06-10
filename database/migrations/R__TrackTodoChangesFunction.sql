@@ -1,11 +1,11 @@
 CREATE OR REPLACE FUNCTION track_todo_changes(
     p_todo_id INT,
-    p_start_date DATE DEFAULT NULL,
-   p_end_date DATE DEFAULT NULL
+    p_start_date TIMESTAMP DEFAULT NULL,
+    p_end_date TIMESTAMP DEFAULT NULL
 )
 RETURNS TABLE (
     "auditLogId" INT,
-    "auditedTimestamp" DATE,
+    "auditedTimestamp" TIMESTAMP,
     "auditModifiedBy" INT,
     "auditModifiedEmail" VARCHAR,
     "auditModifiedName" VARCHAR,
@@ -29,7 +29,8 @@ RETURNS TABLE (
     "priorityId" INT,
     "priorityName" VARCHAR,
     "description" VARCHAR,
-    "changes_made" VARCHAR
+    "isActive" BOOLEAN,
+    "changesMade" VARCHAR
 )
 AS $$
 BEGIN
@@ -47,18 +48,20 @@ RETURN QUERY
                 tal.status_id,
                 tal.priority_id,
                 tal.description,
+                tal.is_active,
                 LAG(tal.title) OVER (PARTITION BY tal.todo_id ORDER BY tal.audit_modified_at) AS prev_title,
                 LAG(tal.assigned_to_id) OVER (PARTITION BY tal.todo_id ORDER BY tal.audit_modified_at) AS prev_assigned_to_id,
                 LAG(tal.team_id) OVER (PARTITION BY tal.todo_id ORDER BY tal.audit_modified_at) AS prev_team_id,
                 LAG(tal.status_id) OVER (PARTITION BY tal.todo_id ORDER BY tal.audit_modified_at) AS prev_status_id,
                 LAG(tal.priority_id) OVER (PARTITION BY tal.todo_id ORDER BY tal.audit_modified_at) AS prev_priority_id,
-                LAG(tal.description) OVER (PARTITION BY tal.todo_id ORDER BY tal.audit_modified_at) AS prev_description
+                LAG(tal.description) OVER (PARTITION BY tal.todo_id ORDER BY tal.audit_modified_at) AS prev_description,
+                LAG(tal.is_active) OVER (PARTITION BY tal.todo_id ORDER BY tal.audit_modified_at) AS prev_is_active
             FROM
                 todo_audit_logs tal
             WHERE
                 tal.todo_id = p_todo_id
-                AND (p_start_date IS NULL OR tal.audit_modified_at::DATE >= p_start_date)
-                AND (p_end_date IS NULL OR tal.audit_modified_at::DATE <= p_end_date)
+                AND (p_start_date IS NULL OR tal.audit_modified_at::TIMESTAMP >= p_start_date)
+                AND (p_end_date IS NULL OR tal.audit_modified_at::TIMESTAMP <= p_end_date)
         )
 SELECT
     ac.audit_log_id AS "auditLogId",
@@ -96,31 +99,36 @@ SELECT
 
     ac.description,
 
+    ac.is_active,
+
     CASE
         WHEN aa.action_name = 'INSERT' THEN 'TODO created.'
         WHEN aa.action_name = 'DELETE' THEN 'TODO deleted.'
         ELSE
             TRIM(BOTH FROM CONCAT_WS(E'\n',
-                                     CASE WHEN ac.title IS DISTINCT FROM ac.prev_title THEN
-                                         'Title: ' || COALESCE(ac.prev_title, '[NULL]') || ' -> ' || COALESCE(ac.title, '[NULL]')
-                                         ELSE NULL END,
-                                     CASE WHEN ac.assigned_to_id IS DISTINCT FROM ac.prev_assigned_to_id THEN
-                                         'Assigned To: ' || COALESCE(u_prev_assigned.name, '[Unassigned]') || ' -> ' || COALESCE(u_assigned.name, '[Unassigned]')
-                                         ELSE NULL END,
-                                     CASE WHEN ac.team_id IS DISTINCT FROM ac.prev_team_id THEN
-                                         'Team: ' || COALESCE(tm_prev.name, '[No Team]') || ' -> ' || COALESCE(tm.name, '[No Team]')
-                                         ELSE NULL END,
-                                     CASE WHEN ac.status_id IS DISTINCT FROM ac.prev_status_id THEN
-                                         'Status: ' || COALESCE(ts_prev.name, '[NULL]') || ' -> ' || COALESCE(ts.name, '[NULL]')
-                                         ELSE NULL END,
-                                     CASE WHEN ac.priority_id IS DISTINCT FROM ac.prev_priority_id THEN
-                                         'Priority: ' || COALESCE(tp_prev.name, '[NULL]') || ' -> ' || COALESCE(tp.name, '[NULL]')
-                                         ELSE NULL END,
-                                     CASE WHEN ac.description IS DISTINCT FROM ac.prev_description THEN
-                                         'Description: ' || COALESCE(ac.prev_description, '[NULL]') || ' -> ' || COALESCE(ac.description, '[NULL]')
-                                         ELSE NULL END
-                           ))
-        END AS changes_made
+                CASE WHEN ac.title IS DISTINCT FROM ac.prev_title THEN
+                    'Title: ' || COALESCE(ac.prev_title, '[NULL]') || ' -> ' || COALESCE(ac.title, '[NULL]')
+                ELSE NULL END,
+                CASE WHEN ac.assigned_to_id IS DISTINCT FROM ac.prev_assigned_to_id THEN
+                    'Assigned To: ' || COALESCE(u_prev_assigned.name, '[Unassigned]') || ' -> ' || COALESCE(u_assigned.name, '[Unassigned]')
+                ELSE NULL END,
+                CASE WHEN ac.team_id IS DISTINCT FROM ac.prev_team_id THEN
+                    'Team: ' || COALESCE(tm_prev.name, '[No Team]') || ' -> ' || COALESCE(tm.name, '[No Team]')
+                ELSE NULL END,
+                CASE WHEN ac.status_id IS DISTINCT FROM ac.prev_status_id THEN
+                    'Status: ' || COALESCE(ts_prev.name, '[NULL]') || ' -> ' || COALESCE(ts.name, '[NULL]')
+                ELSE NULL END,
+                CASE WHEN ac.priority_id IS DISTINCT FROM ac.prev_priority_id THEN
+                    'Priority: ' || COALESCE(tp_prev.name, '[NULL]') || ' -> ' || COALESCE(tp.name, '[NULL]')
+                ELSE NULL END,
+                CASE WHEN ac.description IS DISTINCT FROM ac.prev_description THEN
+                    'Description: ' || COALESCE(ac.prev_description, '[NULL]') || ' -> ' || COALESCE(ac.description, '[NULL]')
+                ELSE NULL END,
+                CASE WHEN ac.is_active IS DISTINCT FROM ac.prev_is_active THEN
+                    'Is Active: ' || COALESCE(ac.prev_is_active, '[NULL]') || ' -> ' || COALESCE(ac.is_active, '[NULL]')
+                ELSE NULL END
+            ))
+        END AS "changesMade"
 FROM
     audited_changes ac
         JOIN
