@@ -1,56 +1,58 @@
-name: Run DB Migrations via Lambda
+name: Database Migration with Flyway
 
 on:
-  workflow_dispatch:
   push:
     branches:
       - main
     paths:
-      - "database/migrations/**"
+      - 'database/migrations/**'
+  
+  workflow_dispatch:
+
 permissions:
-  id-token: write 
   contents: read
+  id-token: write
 
 jobs:
-  migrate:
-    name: Upload Migrations & Invoke Lambda
+  migrate-database:
+    name: Run Flyway Migration
     runs-on: ubuntu-latest
 
-    env:
-      MIGRATIONS_S3_BUCKET: ${{ secrets.MIGRATIONS_S3_BUCKET }}
-      LAMBDA_FUNCTION_NAME: FlywayMigrationLambda
-      DB_SECRET_NAME_ONLY: ${{ secrets.DB_SECRET_NAME }}
-      AWS_REGION: ${{ secrets.AWS_REGION }}
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+      - name: Assume the deploy pipeline user role
+        uses: aws-actions/configure-aws-credentials@v4.0.1
         with:
-          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/GitHubActionsOIDCRole
-          role-session-name: GitHubMigrationsOIDC
-          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: ${{ secrets.ASSUME_ROLE_ARN }}
+          role-session-name: GitHub_to_AWS_via_FederatedOIDC
+          aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Sync migration SQL files to S3
+      - name: Copy ssh key and modify permissions
         run: |
-          aws s3 sync database/migrations/ s3://${{ env.MIGRATIONS_S3_BUCKET }}/migrations/ 
+          aws s3 cp s3://sec-migration-s3-bucket/secuiritybastion.pem .
+          mv secuiritybastion.pem ssh_key.pem
+          chmod 600 ssh_key.pem
 
-      - name: Invoke Flyway Migration Lambda
+      - name: Configure ssh tunnel through bastion host
         run: |
-          aws lambda invoke \
-            --function-name ${{ env.LAMBDA_FUNCTION_NAME }} \
-            --invocation-type RequestResponse \
-            --cli-binary-format raw-in-base64-out \
-            --cli-read-timeout 900 \
-            --cli-connect-timeout 60 \
-            --payload '{
-              "migration_s3_bucket": "${{ env.MIGRATIONS_S3_BUCKET }}",
-              "migration_s3_prefix": "migrations/",
-              "db_secret_name": "${{ env.DB_SECRET_NAME_ONLY }}"
-            }' \
-            response.json
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.BASTION_HOST }} >> ~/.ssh/known_hosts
+          eval "$(ssh-agent -s)"
+          ssh -fN -v -L 127.0.0.1:${{ secrets.DB_PORT }}:${{ secrets.DB_HOST }}:${{ secrets.DB_PORT }} \
+            ${{ secrets.BASTION_USER }}@${{ secrets.BASTION_HOST }} -i ssh_key.pem &
 
-      - name: Print Lambda response
-        run: cat response.json
+      - name: Generate flyway config file
+        run: |
+          cat > flyway.generated.conf <<EOF
+          flyway.url=jdbc:postgresql://localhost:${{ secrets.DB_PORT }}/${{ secrets.DB_NAME }}
+          flyway.user=${{ secrets.DB_USER }}
+          flyway.password=${{ secrets.DB_PASSWORD }}
+          EOF
+          cat database/flyway.conf >> flyway.generated.conf
+
+      - name: Run Flyway Migration
+        run: |
+          sudo snap install flyway
+          flyway migrate -configFiles=flyway.generated.conf
