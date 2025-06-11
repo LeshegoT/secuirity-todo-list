@@ -1,10 +1,12 @@
 import { Router, Request, Response } from 'express';
 import speakeasy from 'speakeasy';
+import jwt from 'jsonwebtoken';
 import { pool } from '../config/dbconfig.js';
-import { validateUuid, validateTotpToken } from '../utils/validation.js';
+import { validateTotpToken } from '../utils/validation.js';
 import type { VerifyRequest, ApiResponse } from '../types/types.js';
 
 const router = Router();
+const JWT_SECRET = process.env.JWT_SECRET!;
 
 interface VerifyRequestBody extends Request {
   body: VerifyRequest;
@@ -12,12 +14,17 @@ interface VerifyRequestBody extends Request {
 
 router.post('/verify', async (req: VerifyRequestBody, res: Response<ApiResponse<{ verified: boolean }>>): Promise<void> => {
   try {
-    const { uuid, token } = req.body;
+    const { uuid: tokenJwt, token } = req.body;
 
-    if (!validateUuid(uuid)) {
-      res.status(400).json({ message: 'Invalid UUID format' });
+    let decoded;
+    try {
+      decoded = jwt.verify(tokenJwt, JWT_SECRET) as { uuid: string };
+    } catch (err) {
+      res.status(400).json({ message: 'Invalid or expired token' });
       return;
     }
+
+    const userUuid = decoded.uuid;
 
     if (!validateTotpToken(token)) {
       res.status(400).json({ message: 'Token must be 6 digits' });
@@ -26,7 +33,7 @@ router.post('/verify', async (req: VerifyRequestBody, res: Response<ApiResponse<
 
     const result = await pool.query(
       'SELECT id, secret, is_verified FROM users WHERE uuid = $1 AND secret IS NOT NULL',
-      [uuid]
+      [userUuid]
     );
 
     if (!result.rowCount || result.rows.length === 0) {

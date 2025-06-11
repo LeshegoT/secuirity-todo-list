@@ -15,9 +15,9 @@ export async function getTeamsForUser(userId: number): Promise<Team[]> {
   return response.rows;
 }
 
-export async function createTeam(newTeam: NewTeam): Promise<NewTeam> {
+export async function createTeam(teamLeadUUid : string, newTeam: NewTeam): Promise<NewTeam> {
   const membersJson = JSON.stringify(
-    newTeam.members?.map((member) => member.id) || []
+    newTeam.members?.map((member) => member.uuid) || []
   );
 
   const query = `
@@ -26,13 +26,12 @@ export async function createTeam(newTeam: NewTeam): Promise<NewTeam> {
 
   await pool.query<{ team_id: number }>(query, [
     newTeam.name,
-    newTeam.teamLeadId,
+    teamLeadUUid,
     membersJson,
   ]);
 
   return {
     name: newTeam.name,
-    teamLeadId: newTeam.teamLeadId,
     members: newTeam.members || [],
   };
 }

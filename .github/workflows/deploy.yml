@@ -1,0 +1,59 @@
+name: Deploy API with Frontend to Elastic Beanstalk
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'frontend/**'
+      - 'backend/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write 
+      contents: read 
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Assume the deploy pipeline user role
+        uses: aws-actions/configure-aws-credentials@v4.0.1
+        with:
+          role-to-assume: ${{ secrets.ASSUME_ROLE_ARN }}
+          role-session-name: GitHub_to_AWS_via_FederatedOIDC
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install backend dependencies
+        working-directory: ./backend
+        run: npm install
+
+      - name: Install frontend dependencies and build
+        working-directory: ./frontend
+        run: npm install
+
+      - name: Run backend build script (which includes frontend build copy)
+        working-directory: ./backend
+        run: CI='' npm run build
+
+      - name: Create deployment bundle
+        working-directory: ./backend
+        run: zip -r app.zip dist package.json package-lock.json
+
+      - name: Deploy to Elastic Beanstalk
+        uses: einaregilsson/beanstalk-deploy@v22
+        with:
+          region: af-south-1
+          application_name: ${{ secrets.EB_APPLICATION_NAME }}
+          environment_name: ${{ secrets.EB_ENVIRONMENT_NAME }}
+          version_label: ${{ github.sha }}
+          deployment_package: ./backend/app.zip

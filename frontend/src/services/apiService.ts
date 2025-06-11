@@ -1,4 +1,4 @@
-import { Status, Team } from "../types";
+import { Status, Team, Todo } from "../types";
 
 interface User {
   id: string;
@@ -34,6 +34,22 @@ interface ValidateResponse {
   message?: string;
 }
 
+interface UserManagement {
+  id: number;
+  uuid: string;
+  email: string;
+  name: string;
+  userRoles: string[];
+  isActive: boolean;
+  createdAt: string;
+  isVerified: boolean;
+}
+
+interface Role {
+  id: number;
+  name: string;
+}
+
 export type DataResponse<T> = {
   status: "success" | "error";
   data: T;
@@ -43,42 +59,37 @@ interface ApiResponse<T = any> {
   data?: T;
   message?: string;
   error?: string;
+  success?: boolean;
+  count?: number;
 }
 
 async function handleResponse<T>(response: Response): Promise<T> {
   const contentType = response.headers.get("content-type");
   let data: any;
 
-  // Attempt to parse JSON if content type is JSON
   if (contentType && contentType.includes("application/json")) {
     try {
       data = await response.json();
     } catch (e) {
-      // If parsing fails, treat as generic text or empty
       data = {};
       console.error("Failed to parse JSON response:", e, response);
     }
   } else {
-    data = await response.text(); // Fallback for non-JSON responses
-    // Wrap text in an object to match expected data structure from axios responses
-    data = { message: data || "No response data" };
+    const text = await response.text();
+    data = { message: text || "No response data" };
   }
 
   if (!response.ok) {
-    // For fetch, non-2xx responses are NOT errors by default.
-    // We manually throw an error to simulate axios's behavior.
     const errorMessage =
       data.message || response.statusText || "Something went wrong";
     const error = new Error(errorMessage) as any;
     error.response = {
-      // Attach response details similar to axios for consistency with AuthContext
       status: response.status,
       data: data,
     };
     if (response.status === 401) {
-      // Simulate axios interceptor for 401 by redirecting
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
+      sessionStorage.removeItem("token");
+      sessionStorage.removeItem("user");
       window.location.href = "/login";
     }
     throw error;
@@ -93,15 +104,12 @@ class ApiService {
     this.baseURL = "/api";
   }
 
-  // With native fetch, you typically retrieve the token right before making the request
-  // as there's no global instance to configure like axios.
-  // These methods update localStorage directly, which the fetchWrapper then reads.
   setAuthToken(token: string): void {
-    localStorage.setItem("token", token);
+    sessionStorage.setItem("token", token);
   }
 
   clearAuthToken(): void {
-    localStorage.removeItem("token");
+    sessionStorage.removeItem("token");
   }
 
   private async fetchWrapper<T>(
@@ -109,7 +117,7 @@ class ApiService {
     options: RequestInit = {}
   ): Promise<T> {
     const url = `${this.baseURL}${endpoint}`;
-    const token = localStorage.getItem("token");
+    const token = sessionStorage.getItem("token");
 
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
@@ -128,14 +136,8 @@ class ApiService {
     return handleResponse<T>(response);
   }
 
-  async healthCheck(): Promise<{
-    status: string;
-    timestamp: string;
-    env: string;
-  }> {
-    return this.fetchWrapper("/health", {
-      method: "GET",
-    });
+  async healthCheck() {
+    return this.fetchWrapper("/health", { method: "GET" });
   }
 
   async register(
@@ -196,6 +198,101 @@ class ApiService {
   async retrieveStatuses(): Promise<DataResponse<Status[]>> {
     return this.fetchWrapper("/statuses", {
       method: "GET",
+    });
+  }
+
+  // User Management Methods
+  async getUsers(): Promise<ApiResponse<UserManagement[]>> {
+    return this.fetchWrapper("/users", {
+      method: "GET",
+    });
+  }
+
+  async getUser(uuid: string): Promise<ApiResponse<UserManagement>> {
+    return this.fetchWrapper(`/users/${uuid}`, {
+      method: "GET",
+    });
+  }
+
+  async getUserRoles(): Promise<ApiResponse<Role[]>> {
+    return this.fetchWrapper("/users/roles", {
+      method: "GET",
+    });
+  }
+
+  async updateUserRoles(
+    uuid: string,
+    roles: string[],
+    operation: "add" | "remove" | "replace" = "replace"
+  ): Promise<ApiResponse> {
+    return this.fetchWrapper(`/users/${uuid}/roles`, {
+      method: "PUT",
+      body: JSON.stringify({ roles, operation }),
+    });
+  }
+
+  async toggleUserLock(uuid: string, isActive: boolean): Promise<ApiResponse> {
+    return this.fetchWrapper(`/users/${uuid}/lock`, {
+      method: "PUT",
+      body: JSON.stringify({ isActive }),
+    });
+  }
+
+  async deleteUser(uuid: string): Promise<ApiResponse> {
+    return this.fetchWrapper(`/users/${uuid}`, {
+      method: "DELETE",
+    });
+  }
+
+  async getUserTeams(
+    uuid: string
+  ): Promise<ApiResponse<{ id: number; name: string; is_lead: boolean }[]>> {
+    return this.fetchWrapper(`/users/${uuid}/teams`, {
+      method: "GET",
+    });
+  }
+
+  async getUIserSearchResults(
+    searchText: string
+  ): Promise<DataResponse<{ uuid: string; name: string }[]>> {
+    return this.fetchWrapper(
+      "/search/users?searchText=" + encodeURIComponent(searchText),
+      {
+        method: "GET",
+      }
+    );
+  }
+
+  async createTeam(
+    teamData: { name: string; members: { uuid: string; name: string }[] }
+  ): Promise<DataResponse<Team>> {
+    return this.fetchWrapper("/teams", {
+      method: "POST",
+      body: JSON.stringify({
+        name: teamData.name,
+        members: teamData.members || [],
+      }),
+    });
+  }
+
+  async createTask(
+    title: string,
+    assignedToUuid: string,
+    teamId: number,
+    statusId: number,
+    priorityId: number,
+    description?: string
+  ): Promise<DataResponse<{ createdTodo: Todo }>> {
+    return this.fetchWrapper("/todos", {
+      method: "POST",
+      body: JSON.stringify({
+        title,
+        assignedToUuid,
+        teamId,
+        statusId,
+        priorityId,
+        description,
+      }),
     });
   }
 }

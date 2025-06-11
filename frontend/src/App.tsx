@@ -1,12 +1,11 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import Login from './components/Login';
-import Register from './components/Register';
 import Dashboard from './pages/Dashboard';
 import Verify from './components/Verify';
 import { AuthProvider, useAuth } from './context/authContext';
 import './App.css'; 
 import LoginPage from './pages/LoginPage';
+import UserManagement from "./components/UserManagement"
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth();
@@ -50,14 +49,6 @@ const AppContent: React.FC = () => {
               </PublicRoute>
             }
           />
-          <Route
-            path="/register"
-            element={
-              <PublicRoute>
-                <Register />
-              </PublicRoute>
-            }
-          />
           <Route path="/verify/:userUuid" element={<Verify />} />
           
           <Route
@@ -68,6 +59,14 @@ const AppContent: React.FC = () => {
               </ProtectedRoute>
             }
           />
+          <Route
+          path="/users"
+          element={
+            <ProtectedRoute>
+              <UserManagement />
+            </ProtectedRoute>
+          }
+        />
         </Routes>
       </div>
     </Router>

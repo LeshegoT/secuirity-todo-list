@@ -11,6 +11,7 @@ import type {
   UserResponse,
   ApiResponse 
 } from '../types/types.js';
+import { getUserByUUID } from '../queries/users.js';
 
 const router = Router();
 
@@ -90,10 +91,16 @@ router.post('/login', async (req: LoginRequestBody, res: Response<LoginResponse>
       throw new Error('JWT_SECRET not configured');
     }
 
+    const userWithRoles = await getUserByUUID(user.uuid)
+ 
+    if (!userWithRoles) {
+      res.status(500).json({ message: "Failed to fetch user details" })
+      return
+    }
     const token = jwt.sign(
-      { uuid: user.uuid, email: user.email }, 
+      { uuid: user.uuid, name: user.name, email: user.email, roles: userWithRoles.userRoles}, 
       process.env.JWT_SECRET, 
-      { expiresIn: '1h' }
+      { expiresIn: '1h', algorithm: 'HS256'}
     );
     
 
@@ -105,7 +112,6 @@ router.post('/login', async (req: LoginRequestBody, res: Response<LoginResponse>
 
     res.json({ 
       token,
-      user: userResponse,
       message: 'Login successful'
     });
 

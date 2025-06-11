@@ -1,7 +1,6 @@
 "use client";
 
 import type React from "react";
-
 import { useEffect, useState } from "react";
 import {
   Box,
@@ -14,20 +13,15 @@ import {
   Menu,
   MenuItem,
   Container,
+  CircularProgress,
 } from "@mui/material";
 import Grid from "@mui/material/Grid";
-import { Settings, Logout } from "@mui/icons-material";
+import { Settings, Logout, People } from "@mui/icons-material";
 import TeamSidebar from "../components/TeamSidebar";
 import TaskList from "../components/TaskList";
 import { apiService } from "../services/apiService";
-import { Status, Team, Priority } from "../types";
-
-const currentUser = {
-  uuid: "e59c2865-79d9-4f6a-8908-23edf0d03889",
-  name: "John Doe",
-  email: "john@example.com",
-  avatar: undefined,
-};
+import type { Status, Team, Priority, User } from "../types";
+import { useAuth } from "../context/authContext";
 
 export default function Dashboard() {
   const [selectedTeam, setSelectedTeam] = useState<number | null>(null);
@@ -35,28 +29,36 @@ export default function Dashboard() {
   const [priorities, setPriorities] = useState<Priority[]>([]);
   const [statuses, setStatuses] = useState<Status[]>([]);
   const [teams, setUserTeams] = useState<Team[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const { user, logout, loading: authLoading } = useAuth();
   const open = Boolean(anchorEl);
 
   useEffect(() => {
-    const fetchPriorities = async () => {
-      const response = await apiService.retrievePriorities();
-      setPriorities(response.data);
+    const init = async () => {
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const [prioritiesRes, teamsRes, statusesRes] = await Promise.all([
+          apiService.retrievePriorities(),
+          apiService.retrieveUserTeams(),
+          apiService.retrieveStatuses(),
+        ]);
+        setPriorities(prioritiesRes.data);
+        setUserTeams(teamsRes.data);
+        setStatuses(statusesRes.data);
+      } catch (error) {
+        console.error("Error fetching data", error);
+      } finally {
+        setLoading(false);
+      }
     };
 
-    const fetchUserTeams = async () => {
-      const response = await apiService.retrieveUserTeams();
-      setUserTeams(response.data);
-    };
-
-    const retrieveStatuses = async () => {
-      const response = await apiService.retrieveStatuses();
-      setStatuses(response.data);
-    };
-
-    fetchPriorities();
-    fetchUserTeams();
-    retrieveStatuses();
-  }, []);
+    init();
+  }, [user]);
 
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -65,6 +67,31 @@ export default function Dashboard() {
   const handleClose = () => {
     setAnchorEl(null);
   };
+
+  const refetchTeams = async () => {
+    try {
+      const teamsRes = await apiService.retrieveUserTeams()
+      setUserTeams(teamsRes.data)
+    } catch (error) {
+      console.error("Error refetching teams", error)
+    }
+  }
+
+
+  if (loading || authLoading || !user) {
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          height: "100vh",
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ display: "flex" }}>
@@ -85,12 +112,13 @@ export default function Dashboard() {
             aria-haspopup="true"
             aria-expanded={open ? "true" : undefined}
           >
-            <Avatar sx={{ width: 32, height: 32 }} src={currentUser.avatar}>
-              {currentUser.name
-                .split(" ")
-                .map((n) => n[0])
-                .join("")}
+            <Avatar sx={{ width: 32, height: 32 }} src={user?.avatar}>
+              {(user?.name || "") // Accessing user.name here
+              .split(" ")
+              .map((n) => n[0])
+              .join("") || "?"}
             </Avatar>
+
           </IconButton>
           <Menu
             anchorEl={anchorEl}
@@ -103,16 +131,30 @@ export default function Dashboard() {
           >
             <MenuItem disabled>
               <Box sx={{ display: "flex", flexDirection: "column" }}>
-                <Typography variant="subtitle2">{currentUser.name}</Typography>
+                <Typography variant="subtitle2">{user.name}</Typography>
                 <Typography variant="caption" color="text.secondary">
-                  {currentUser.email}
+                  {user.email} 
                 </Typography>
               </Box>
+            </MenuItem>
+            <MenuItem
+              onClick={() => {
+                handleClose();
+                window.location.href = "/users";
+              }}
+            >
+              <People fontSize="small" sx={{ mr: 1 }} /> User Management
             </MenuItem>
             <MenuItem onClick={handleClose}>
               <Settings fontSize="small" sx={{ mr: 1 }} /> Settings
             </MenuItem>
-            <MenuItem onClick={handleClose}>
+            <MenuItem
+              onClick={() => {
+                handleClose();
+                logout();
+                window.location.href = "/login";
+              }}
+            >
               <Logout fontSize="small" sx={{ mr: 1 }} /> Logout
             </MenuItem>
           </Menu>
@@ -124,16 +166,17 @@ export default function Dashboard() {
             <Grid>
               <TeamSidebar
                 teams={teams}
-                currentUser={currentUser}
+                currentUser={user}
                 selectedTeam={selectedTeam}
                 onSelectTeam={setSelectedTeam}
+                refetchTeams={refetchTeams}
               />
             </Grid>
             <Grid>
               <TaskList
                 todos={teams.flatMap((el) => el.todos)}
                 teams={teams}
-                currentUser={currentUser}
+                currentUser={user}
                 selectedTeam={selectedTeam}
                 statuses={statuses}
                 priorities={priorities}

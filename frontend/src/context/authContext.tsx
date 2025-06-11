@@ -1,20 +1,43 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { apiService } from '../services/apiService';
+"use client";
 
-interface User {
-  id: string;
-  name: string;
-  email: string;
-}
+import type React from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  type ReactNode,
+} from "react";
+import { apiService } from "../services/apiService";
+import {
+  decodeToken,
+  type DecodedUser,
+  isTokenExpired,
+} from "../utils/jwtUtils";
 
 interface AuthContextType {
-  user: User | null;
+  user: DecodedUser | null;
   token: string | null;
   loading: boolean;
-  login: (email: string, password: string, totpToken?: string) => Promise<{ success: boolean; requiresTwoFactor?: boolean; message: string }>;
+  login: (
+    email: string,
+    password: string,
+    totpToken?: string
+  ) => Promise<{
+    success: boolean;
+    requiresTwoFactor?: boolean;
+    message: string;
+  }>;
   logout: () => void;
-  register: (name: string, email: string, password: string) => Promise<{ success: boolean; data?: any; message: string }>;
-  verify: (userId: string, token: string) => Promise<{ success: boolean; message: string }>;
+  register: (
+    name: string,
+    email: string,
+    password: string
+  ) => Promise<{ success: boolean; data?: any; message: string }>;
+  verify: (
+    userId: string,
+    token: string
+  ) => Promise<{ success: boolean; message: string }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -22,7 +45,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 };
@@ -32,26 +55,34 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
+  const [user, setUser] = useState<DecodedUser | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check for existing token on app load
-    const storedToken = localStorage.getItem('token');
- //   const storedUser = localStorage.getItem('user');
+    const storedToken = sessionStorage.getItem("token");
 
- //if (storedToken && storedUser)
- if (storedToken)  {
-      try {
-   //     const parsedUser = JSON.parse(storedUser);
+    console.log("Stored token:", storedToken);
+
+    if (storedToken) {
+      // Check if token is expired
+      if (isTokenExpired(storedToken)) {
+        console.log("Token expired, clearing session");
+        sessionStorage.removeItem("token");
+        setLoading(false);
+        return;
+      }
+
+      const decoded = decodeToken(storedToken);
+      console.log("Decoded token:", decoded);
+
+      if (decoded) {
         setToken(storedToken);
-     //   setUser(parsedUser);
-        apiService.setAuthToken(storedToken); // Set token in apiService (now updates localStorage)
-      } catch (error) {
-        console.error('Error parsing stored user data:', error);
-        localStorage.removeItem('token');
-       // localStorage.removeItem('user');
+        setUser(decoded);
+        apiService.setAuthToken(storedToken);
+      } else {
+        console.log("Failed to decode token, removing from storage");
+        sessionStorage.removeItem("token");
       }
     }
 
@@ -63,24 +94,45 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const response = await apiService.login(email, password, totpToken);
 
       if (response.requiresTwoFactor) {
-        return { success: false, requiresTwoFactor: true, message: response.message };
+        return {
+          success: false,
+          requiresTwoFactor: true,
+          message: response.message,
+        };
       }
 
-      if (response.token && response.user) {
-        setToken(response.token);
-        setUser(response.user);
-        localStorage.setItem('token', response.token);
-        localStorage.setItem('user', JSON.stringify(response.user));
-        apiService.setAuthToken(response.token); // Set token in apiService (now updates localStorage)
-        return { success: true, message: response.message };
+      if (response.token) {
+        // Check if the new token is valid and not expired
+        if (isTokenExpired(response.token)) {
+          return {
+            success: false,
+            message: "Received expired token from server",
+          };
+        }
+
+        const decoded = decodeToken(response.token);
+        if (decoded) {
+          sessionStorage.setItem("token", response.token);
+          setToken(response.token);
+          setUser(decoded);
+          apiService.setAuthToken(response.token);
+          console.log("Login successful, user:", decoded);
+          return { success: true, message: response.message };
+        } else {
+          return {
+            success: false,
+            message: "Failed to decode user information from token",
+          };
+        }
       }
 
       return { success: false, message: response.message };
     } catch (error: any) {
-      // Adjusted to be compatible with the custom error structure from fetchWrapper
+      console.error("Login error:", error);
       return {
         success: false,
-        message: error.response?.data?.message || error.message || 'Login failed. Please try again.'
+        message:
+          error.response?.data?.message || error.message || "Login failed.",
       };
     }
   };
@@ -91,13 +143,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       return {
         success: true,
         data: response.data,
-        message: 'Registration successful! Please set up your 2FA.'
+        message: "Registration successful! Please set up your 2FA.",
       };
     } catch (error: any) {
-      // Adjusted to be compatible with the custom error structure from fetchWrapper
+      console.error("Registration error:", error);
       return {
         success: false,
-        message: error.response?.data?.message || error.message || 'Registration failed. Please try again.'
+        message:
+          error.response?.data?.message ||
+          error.message ||
+          "Registration failed.",
       };
     }
   };
@@ -107,37 +162,32 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const response = await apiService.verify(userId, totpToken);
       return {
         success: response.data.verified,
-        message: response.message
+        message: response.message,
       };
     } catch (error: any) {
-      // Adjusted to be compatible with the custom error structure from fetchWrapper
+      console.error("Verification error:", error);
       return {
         success: false,
-        message: error.response?.data?.message || error.message || 'Verification failed. Please try again.'
+        message:
+          error.response?.data?.message ||
+          error.message ||
+          "Verification failed. Please try again.",
       };
     }
   };
 
   const logout = () => {
-    setUser(null);
+    console.log("Logging out user");
     setToken(null);
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    apiService.clearAuthToken(); // Clear token in apiService (now clears localStorage)
-  };
-
-  const value: AuthContextType = {
-    user,
-    token,
-    loading,
-    login,
-    logout,
-    register,
-    verify
+    setUser(null);
+    sessionStorage.removeItem("token");
+    apiService.clearAuthToken();
   };
 
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider
+      value={{ user, token, loading, login, logout, register, verify }}
+    >
       {children}
     </AuthContext.Provider>
   );
