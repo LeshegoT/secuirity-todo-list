@@ -3,6 +3,7 @@ SELECT
     t.priority_id AS "priorityId",
     tp.name AS "priorityName",
 
+    t.id,
     t.title,
 
     t.assigned_to_id AS "assignedToId",

@@ -8,7 +8,7 @@ AS $$
 BEGIN
     RETURN QUERY
     SELECT
-        t.status_id AS "statusID",
+        t.status_id AS "statusId",
         ts.name AS "statusName",
         COUNT(t.id) AS "todoCount"
     FROM
@@ -18,6 +18,7 @@ BEGIN
     WHERE
         (p_team_id IS NULL OR t.team_id = p_team_id)
     GROUP BY
+        t.status_id,
         ts.name
     ORDER BY
         "statusName";

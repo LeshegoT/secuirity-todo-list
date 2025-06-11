@@ -1,37 +1,50 @@
 import {pool} from "../config/dbconfig.js";
-import {RawTodo, TeamInTodoResponse, TodoResponse, UserInTodoResponse, CreateTodoPayload, UpdateTodoPayload} from "./models/todo";
+import {
+  RawTodo,
+  TeamInTodoResponse,
+  TodoResponse,
+  UserInTodoResponse,
+  CreateTodoPayload,
+  UpdateTodoPayload,
+  TodoCountByPriorityResponse, TodoCountByStatusResponse, TodoByPriorityResponse, TodoByStatusResponse
+} from "./models/todo.js";
 import {getUserId} from "./users.js";
 import {NotFoundError} from "../routes/errors/customError.js";
-import {Todo} from "../models/todo";
-import {TodoStatus} from "../models/todo-status";
-import {TodoPriority} from "../models/todo-priority";
+import {Todo} from "../models/todo.js";
+import {TodoStatus} from "../models/todo-status.js";
+import {TodoPriority} from "../models/todo-priority.js";
+import {AuditAction, TodoAuditLogResponse} from "./models/todo-audit-log.js";
 
 function transformRawTodoToTodoResponse(rawTodo: RawTodo): TodoResponse {
 
   const baseTodo: Todo = {
     id: rawTodo.id,
     title: rawTodo.title,
-    assignedToId: rawTodo.assignedToId,
     teamId: rawTodo.teamId,
     statusId: rawTodo.statusId,
     priorityId: rawTodo.priorityId,
     createdAt: rawTodo.createdAt,
-    createdBy: rawTodo.createdBy,
     description: rawTodo.description,
     isActive: rawTodo.isActive,
-    lastModifiedAt: rawTodo.lastModifiedAt,
-    lastModifiedBy: rawTodo.lastModifiedBy
+    lastModifiedAt: rawTodo.lastModifiedAt
   };
 
-  const assignedToUser: UserInTodoResponse | null = rawTodo.assignedToId ? {
-    id: rawTodo.assignedToId,
+  const assignedToUser: UserInTodoResponse | null = rawTodo.assignedToUuid ? {
+    uuid: rawTodo.assignedToUuid,
     name: rawTodo.assignedToName,
     email: rawTodo.assignedToEmail
   } : null;
 
+  const teamLeadUser: UserInTodoResponse = {
+    uuid: rawTodo.teamLeadUuid,
+    name: rawTodo.teamLeadName,
+    email: rawTodo.teamLeadEmail
+  };
+
   const team: TeamInTodoResponse = {
     id: rawTodo.teamId,
-    name: rawTodo.teamName
+    name: rawTodo.teamName,
+    teamLead: teamLeadUser
   };
 
   const status: TodoStatus = {
@@ -45,7 +58,7 @@ function transformRawTodoToTodoResponse(rawTodo: RawTodo): TodoResponse {
   };
 
   const createdByUser: UserInTodoResponse = {
-    id: rawTodo.createdBy,
+    uuid: rawTodo.createdByUuid,
     name: rawTodo.createdByName,
     email: rawTodo.createdByEmail
   };
@@ -72,28 +85,28 @@ export async function getTodos(
     SELECT
       t.id,
       t.title,
-      t.assigned_to_id AS "assignedToId",
       t.team_id AS "teamId",
       t.status_id AS "statusId",
       t.priority_id AS "priorityId",
       t.created_at AS "createdAt",
-      t.created_by AS "createdBy",
       t.description,
       t.is_active AS "isActive",
       t.last_modified_at AS "lastModifiedAt",
-      t.last_modified_by AS "lastModifiedBy",
-      um.name AS "lastModifiedByName",
-      um.email AS "lastModifiedByEmail",
-      um.uuid AS "lastModifiedByUuid",
+      ulm.uuid AS "lastModifiedByUuid",
+      ulm.name AS "lastModifiedByName",
+      ulm.email AS "lastModifiedByEmail",
+      us.uuid AS "assignedToUuid",
       us.name AS "assignedToName",
       us.email AS "assignedToEmail",
-      us.uuid AS "assignedToUuid",
       ts.name AS "statusName",
       tp.name AS "priorityName",
+      uc.uuid AS "createdByUuid",
       uc.name AS "createdByName",
       uc.email AS "createdByEmail",
-      uc.uuid AS "createdByUuid",
-      teams.name AS "teamName"
+      teams.name AS "teamName",
+      utl.uuid AS "teamLeadUuid",
+      utl.name AS "teamLeadName",
+      utl.email AS "teamLeadEmail"
     FROM
         todos AS t
         LEFT JOIN
@@ -107,7 +120,9 @@ export async function getTodos(
         LEFT JOIN
             teams AS teams ON teams.id = t.team_id
         LEFT JOIN
-            users AS um ON t.last_modified_by = um.id
+            users AS utl ON teams.team_lead_id = utl.id
+        LEFT JOIN
+            users AS ulm ON t.last_modified_by = ulm.id
   `;
 
   const params: (number)[] = [];
@@ -149,7 +164,6 @@ export async function getTodos(
   const result = await pool.query(sqlQuery, params);
 
   const response : TodoResponse[] = [];
-
 
   for (const row of result.rows) {
     response.push(transformRawTodoToTodoResponse(row as RawTodo));
@@ -256,13 +270,13 @@ export async function updateTodo(id: number, updateTodoPayload: UpdateTodoPayloa
     params.push(updateTodoPayload.description);
     paramIndex++;
   }
-  if (updateTodoPayload.isActive !== null || updateTodoPayload.isActive !== undefined) {
+  if (updateTodoPayload.isActive !== null && updateTodoPayload.isActive !== undefined) {
     setSqlQuery.push(`is_active = $${paramIndex}`);
     params.push(updateTodoPayload.isActive as boolean);
     paramIndex++;
   }
 
-  if (setSqlQuery.length === 0) {
+  if (setSqlQuery.length <= 2) {
     throw new Error("Cannot update todos if you're not changing any values");
   }
 
@@ -280,4 +294,216 @@ export async function updateTodo(id: number, updateTodoPayload: UpdateTodoPayloa
 
   const result = await pool.query(sqlQuery, params);
   return result.rows[0] as TodoResponse;
+}
+
+export async function getTodoCountsByPriorityByTeamId(teamId: number): Promise<TodoCountByPriorityResponse[]> {
+  try {
+    const result = await pool.query('SELECT * FROM get_todos_priority_counts_by_team($1)', [teamId]);
+
+    const response : TodoCountByPriorityResponse[] = [];
+
+    for (const row of result.rows) {
+      const priority: TodoPriority = {
+        id: row.priorityId,
+        name: row.priorityName,
+      };
+
+      response.push({
+        priority: priority,
+        todoCount: row.todoCount
+      });
+    }
+
+    return response;
+  } catch (error) {
+    throw error;
+  }
+}
+
+export async function getTodoCountsByStatusByTeamId(teamId: number): Promise<TodoCountByStatusResponse[]> {
+  try {
+    const result = await pool.query('SELECT * FROM get_todos_status_counts_by_team($1)', [teamId]);
+
+    const response : TodoCountByStatusResponse[] = [];
+
+    for (const row of result.rows) {
+      const status: TodoStatus = {
+        id: row.statusId,
+        name: row.statusName,
+      };
+
+      response.push({
+        status: status,
+        todoCount: row.todoCount
+      });
+    }
+
+    return response;
+  } catch (error) {
+    throw error;
+  }
+}
+
+export async function getTodosByPriority(teamId: number): Promise<TodoByPriorityResponse[]> {
+  try {
+    let sqlQuery = `
+      SELECT
+          "priorityId",
+          "priorityName",
+          id,
+          title,
+          "assignedToUuid",
+          "assignedToEmail",
+          "assignedToName",
+          "teamId",
+          "teamName",
+          "teamLeadUuid",
+          "teamLeadEmail",
+          "teamLeadName",
+          "statusId",
+          "statusName",
+          "createdAt",
+          "createdByUuid",
+          "createdByEmail",
+          "createdByName",
+          description
+      FROM todos_by_priority_view
+      WHERE "teamId" = $${1}
+      ORDER BY "priorityId" ASC, "createdAt" DESC
+      `;
+
+    const params = [teamId];
+
+    const result = await pool.query(sqlQuery, params);
+
+
+    const groupedTodos = new Map();
+
+    result.rows.forEach(row => {
+      const priorityKey = row.priorityName;
+      if (!groupedTodos.has(priorityKey)) {
+        const priority: TodoPriority = {
+          id: row.statusId,
+          name: row.statusName,
+        };
+        groupedTodos.set(priorityKey, {
+          priority: priority,
+          todos: []
+        });
+      }
+
+      const { priorityId, priorityName, ...restOfTodo } = row;
+      groupedTodos.get(priorityKey).todos.push(transformRawTodoToTodoResponse(restOfTodo as RawTodo));
+    });
+
+
+    return Array.from(groupedTodos.values());
+  } catch (error) {
+    throw error;
+  }
+}
+
+export async function getTodosByStatus(teamId: number): Promise<TodoByStatusResponse[]> {
+  try {
+    let sqlQuery = `
+      SELECT
+          "statusId",
+          "statusName",
+          id,
+          title,
+          "assignedToUuid",
+          "assignedToEmail",
+          "assignedToName",
+          "teamId",
+          "teamName",
+          "teamLeadUuid",
+          "teamLeadEmail",
+          "teamLeadName",
+          "priorityId",
+          "priorityName",
+          "createdAt",
+          "createdByUuid",
+          "createdByEmail",
+          "createdByName",
+          description
+      FROM todos_by_status_view
+      WHERE "teamId" = $${1}
+      ORDER BY "statusId" ASC, "createdAt" DESC
+      `;
+
+    const params = [teamId];
+
+    const result = await pool.query(sqlQuery, params);
+
+
+    const groupedTodos = new Map();
+
+    result.rows.forEach(row => {
+      const statusKey = row.statusName;
+      if (!groupedTodos.has(statusKey)) {
+        const status: TodoStatus = {
+          id: row.statusId,
+          name: row.statusName,
+        };
+        groupedTodos.set(statusKey, {
+          status: status,
+          todos: []
+        });
+      }
+
+      const { statusId, statusName, ...restOfTodo } = row;
+      groupedTodos.get(statusKey).todos.push(transformRawTodoToTodoResponse(restOfTodo as RawTodo));
+    });
+
+
+    return Array.from(groupedTodos.values());
+  } catch (error) {
+    throw error;
+  }
+}
+
+export async function trackTodoChanges(todoId: number, startDate: string | null = null, endDate: string | null = null): Promise<TodoAuditLogResponse[]> {
+  try {
+    const result = await pool.query('SELECT * FROM track_todo_changes($1, $2, $3)', [
+      todoId,
+      startDate ? new Date(startDate) : null,
+      endDate ? new Date(endDate) : null,
+    ]);
+
+    const response : TodoAuditLogResponse[] = [];
+
+    for (const row of result.rows) {
+      const {
+        auditLogId,
+        auditedTimestamp,
+        auditModifiedUuid,
+        auditModifiedEmail,
+        auditModifiedName,
+        auditActionId,
+        auditActionName,
+        changesMade,
+        ...todo
+      } = row;
+
+      response.push({
+        auditLogId: auditLogId,
+        auditedTimestamp: auditedTimestamp,
+        auditModifiedByUser: {
+          uuid: auditModifiedUuid,
+          email: auditModifiedEmail,
+          name: auditModifiedName
+        },
+        auditAction: {
+          id: auditActionId,
+          name: auditActionId
+        },
+        todo: transformRawTodoToTodoResponse(todo as RawTodo),
+        changesMade: changesMade
+      });
+    }
+
+    return response;
+  } catch (error) {
+    throw error;
+  }
 }

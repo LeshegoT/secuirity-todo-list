@@ -11,7 +11,7 @@ RETURNS TABLE (
     "auditModifiedName" VARCHAR,
     "auditModifiedUuid" UUID,
     "auditActionId" INT,
-    "auditName" VARCHAR,
+    "auditActionName" CHAR(6),
     "todoId" INT,
     title VARCHAR,
     "assignedToId" INT,
@@ -19,7 +19,7 @@ RETURNS TABLE (
     "assignedToName" VARCHAR,
     "assignedToUuid" UUID,
     "teamId" INT,
-    "teamName" VARCHAR,
+    "teamName" TEXT,
     "teamLeadId" INT,
     "teamLeadEmail" VARCHAR,
     "teamLeadName" VARCHAR,
@@ -28,9 +28,14 @@ RETURNS TABLE (
     "statusName" VARCHAR,
     "priorityId" INT,
     "priorityName" VARCHAR,
-    "description" VARCHAR,
+    "description" TEXT,
     "isActive" BOOLEAN,
-    "changesMade" VARCHAR
+    "createdAt" TIMESTAMP,
+    "createdBy" INT,
+    "createdByEmail" VARCHAR,
+    "createdByName" VARCHAR,
+    "createdByUuid" UUID,
+    "changesMade" TEXT
 )
 AS $$
 BEGIN
@@ -49,6 +54,8 @@ RETURN QUERY
                 tal.priority_id,
                 tal.description,
                 tal.is_active,
+                tal.created_at,
+                tal.created_by,
                 LAG(tal.title) OVER (PARTITION BY tal.todo_id ORDER BY tal.audit_modified_at) AS prev_title,
                 LAG(tal.assigned_to_id) OVER (PARTITION BY tal.todo_id ORDER BY tal.audit_modified_at) AS prev_assigned_to_id,
                 LAG(tal.team_id) OVER (PARTITION BY tal.todo_id ORDER BY tal.audit_modified_at) AS prev_team_id,
@@ -73,7 +80,7 @@ SELECT
     u_audit.uuid AS "auditModifiedUuid",
 
     ac.audit_action_id AS "auditActionId",
-    aa.action_name AS "auditName",
+    aa.action_name AS "auditActionName",
 
     ac.todo_id AS "todoId",
     ac.title,
@@ -99,7 +106,14 @@ SELECT
 
     ac.description,
 
-    ac.is_active,
+    ac.is_active AS "isActive",
+
+    ac.created_at AS "createdAt",
+
+    ac.created_by AS "createdBy",
+    u_created_by.email AS "createdByEmail",
+    u_created_by.name AS "createdByName",
+    u_created_by.uuid AS "createdByUuid",
 
     CASE
         WHEN aa.action_name = 'INSERT' THEN 'TODO created.'
@@ -125,7 +139,7 @@ SELECT
                     'Description: ' || COALESCE(ac.prev_description, '[NULL]') || ' -> ' || COALESCE(ac.description, '[NULL]')
                 ELSE NULL END,
                 CASE WHEN ac.is_active IS DISTINCT FROM ac.prev_is_active THEN
-                    'Is Active: ' || COALESCE(ac.prev_is_active, '[NULL]') || ' -> ' || COALESCE(ac.is_active, '[NULL]')
+                    'Is Active: ' || COALESCE(ac.prev_is_active::TEXT, '[NULL]') || ' -> ' || COALESCE(ac.is_active::TEXT, '[NULL]')
                 ELSE NULL END
             ))
         END AS "changesMade"
@@ -144,6 +158,8 @@ FROM
         LEFT JOIN
     teams tm ON ac.team_id = tm.id
         LEFT JOIN
+    users u_team_lead ON tm.team_lead_id = u_team_lead.id
+        LEFT JOIN
     users u_prev_assigned ON ac.prev_assigned_to_id = u_prev_assigned.id
         LEFT JOIN
     todo_statuses ts_prev ON ac.prev_status_id = ts_prev.id
@@ -151,6 +167,8 @@ FROM
     todo_priorities tp_prev ON ac.prev_priority_id = tp_prev.id
         LEFT JOIN
     teams tm_prev ON ac.prev_team_id = tm_prev.id
+        LEFT JOIN
+    users u_created_by ON ac.created_by = u_created_by.id
 ORDER BY
     ac.audited_timestamp ASC;
 END;

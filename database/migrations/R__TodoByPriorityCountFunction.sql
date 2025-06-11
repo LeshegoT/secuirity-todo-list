@@ -1,6 +1,6 @@
 CREATE OR REPLACE FUNCTION get_todos_priority_counts_by_team(p_team_id INT DEFAULT NULL)
 RETURNS TABLE (
-    "priorityID" INT,
+    "priorityId" INT,
     "priorityName" VARCHAR,
     "todoCount" BIGINT
 )
@@ -8,7 +8,7 @@ AS $$
 BEGIN
     RETURN QUERY
     SELECT
-        t.priority_id AS "priorityID",
+        t.priority_id AS "priorityId",
         tp.name AS "priorityName",
         COUNT(t.id) AS "todoCount"
     FROM
@@ -18,6 +18,7 @@ BEGIN
     WHERE
         (p_team_id IS NULL OR t.team_id = p_team_id)
     GROUP BY
+        t.priority_id,
         tp.name
     ORDER BY
         "priorityName";

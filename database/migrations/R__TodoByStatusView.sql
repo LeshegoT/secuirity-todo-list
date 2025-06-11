@@ -3,6 +3,7 @@ SELECT
     t.status_id AS "statusId",
     ts.name AS "statusName",
 
+    t.id,
     t.title,
 
     t.assigned_to_id AS "assignedToId",
