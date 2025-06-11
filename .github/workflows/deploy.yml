@@ -43,7 +43,7 @@ jobs:
 
       - name: Run backend build script (which includes frontend build copy)
         working-directory: ./backend
-        run: npm run build
+        run: CI='' npm run build
 
       - name: Create deployment bundle
         working-directory: ./backend
