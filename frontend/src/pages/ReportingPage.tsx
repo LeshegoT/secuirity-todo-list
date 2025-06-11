@@ -34,6 +34,7 @@ import StatusDistributionChart from "../components/StatusDistributionChart"
 import TodosTable from "../components/TodosTable"
 import TodoChangeHistory from "../components/TodoChangeHistory"
 import type { Team, TodoCountByPriority, TodoCountByStatus, TodosByPriority, TodosByStatus, Todo } from "../types"
+import { toast } from "react-toastify";
 
 interface TabPanelProps {
   children?: React.ReactNode
@@ -93,7 +94,7 @@ const ReportingPage: React.FC = () => {
         }
       } catch (err: any) {
         setError(err.message || "Failed to load teams")
-        console.error("Error fetching teams:", err)
+        toast("Error fetching teams:", err)
       } finally {
         setLoading(false)
       }
@@ -114,45 +115,69 @@ const ReportingPage: React.FC = () => {
     setLoadingPriorityCounts(true)
     try {
       const priorityData = await apiService.getTodoCountsByPriority(teamId)
-      setPriorityCounts(priorityData)
+
+      if (priorityData instanceof Error)
+      {
+        toast(priorityData.message);
+      } else {
+        setPriorityCounts(priorityData)
+      }
     } catch (err: any) {
-      console.error("Error fetching priority counts:", err)
+      toast("Error fetching priority counts:", err.message())
     } finally {
       setLoadingPriorityCounts(false)
     }
 
     setLoadingStatusCounts(true)
     try {
-      const statusData = await apiService.getTodoCountsByStatus(teamId)
-      setStatusCounts(statusData)
+      const statusData = await apiService.getTodoCountsByStatus(teamId);
+
+      if (statusData instanceof Error)
+      {
+        toast(statusData.message);
+      } else {
+        setStatusCounts(statusData);
+      }
+
     } catch (err: any) {
-      console.error("Error fetching status counts:", err)
+      toast("Error fetching status counts:", err.message);
     } finally {
-      setLoadingStatusCounts(false)
+      setLoadingStatusCounts(false);
     }
 
-    setLoadingTodosByPriority(true)
+    setLoadingTodosByPriority(true);
     try {
-      const todosPriorityData = await apiService.getTodosByPriority(teamId)
-      setTodosByPriority(todosPriorityData)
+      const todosPriorityData = await apiService.getTodosByPriority(teamId);
+      if (todosPriorityData instanceof Error)
+      {
+        toast(todosPriorityData.message);
+      } else {
+        setTodosByPriority(todosPriorityData);
 
-      if (todosPriorityData.length > 0 && todosPriorityData[0].todos.length > 0) {
-        setSelectedTodoId(todosPriorityData[0].todos[0].id)
+        if (todosPriorityData.length > 0 && todosPriorityData[0].todos.length > 0) {
+          setSelectedTodoId(todosPriorityData[0].todos[0].id);
+        }
       }
     } catch (err: any) {
-      console.error("Error fetching todos by priority:", err)
+      toast("Error fetching todos by priority:", err)
     } finally {
       setLoadingTodosByPriority(false)
     }
 
     setLoadingTodosByStatus(true)
     try {
-      const todosStatusData = await apiService.getTodosByStatus(teamId)
-      setTodosByStatus(todosStatusData)
+      const todosStatusData = await apiService.getTodosByStatus(teamId);
+
+      if (todosStatusData instanceof Error)
+      {
+        toast(todosStatusData.message);
+      } else {
+        setTodosByStatus(todosStatusData);
+      }
     } catch (err: any) {
-      console.error("Error fetching todos by status:", err)
+      toast("Error fetching todos by status:", err);
     } finally {
-      setLoadingTodosByStatus(false)
+      setLoadingTodosByStatus(false);
     }
   }
 

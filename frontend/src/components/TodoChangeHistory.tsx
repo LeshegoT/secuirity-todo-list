@@ -19,6 +19,7 @@ import {
 import { History, CalendarToday, Person } from "@mui/icons-material"
 import { apiService } from "../services/apiService"
 import type { TodoAuditLog } from "../types"
+import { toast } from "react-toastify";
 
 interface TodoChangeHistoryProps {
   todoId: number
@@ -36,10 +37,16 @@ const TodoChangeHistory: React.FC<TodoChangeHistoryProps> = ({ todoId }) => {
     setError(null)
     try {
       const response = await apiService.getTodoChanges(todoId, startDate || undefined, endDate || undefined)
-      setChanges(response)
+
+      if (response instanceof Error)
+      {
+        toast(response.message);
+      } else {
+        setChanges(response)
+      }
     } catch (err: any) {
       setError(err.message || "Failed to load change history")
-      console.error("Error fetching todo changes:", err)
+      toast("Error fetching todo changes:", err)
     } finally {
       setLoading(false)
     }
