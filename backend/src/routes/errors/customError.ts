@@ -5,29 +5,27 @@ export class CustomError extends Error {
   constructor(
     name : string,
     message : string,
-    statusCode : number,
-    details: string | null) {
+    statusCode : number) {
     super(message);
     this.name = name;
     this.statusCode = statusCode;
-    this.details = details;
   }
 }
 
 export class InvalidIdError extends CustomError {
-  constructor(message = "Invalid ID", details: string | null) {
-    super("InvalidIdError", message, 400, details);
+  constructor(message = "Invalid ID") {
+    super("InvalidIdError", message, 400);
   }
 }
 
 export class UnauthorizedError extends CustomError {
-  constructor(message = "Unauthorized", details: string | null) {
-    super("UnauthorizedError", message, 401, details);
+  constructor(message = "Unauthorized") {
+    super("UnauthorizedError", message, 403);
   }
 }
 
 export class NotFoundError extends CustomError {
-  constructor(message = "NotFound", details: string | null) {
-    super("NotFoundError", message, 404, details);
+  constructor(message = "NotFound") {
+    super("NotFoundError", message, 404);
   }
 }

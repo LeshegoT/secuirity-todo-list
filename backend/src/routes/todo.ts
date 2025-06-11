@@ -23,7 +23,7 @@ const isUserAuthorised = (userRoles: string[], details : string) => {
     }
   }
 
-  throw new UnauthorizedError("Unauthorized", details);
+  throw new UnauthorizedError(details);
 }
 
 const isUserUnrestricted = (userRoles: string[]) => {
@@ -39,7 +39,7 @@ const isUserUnrestricted = (userRoles: string[]) => {
 const covertToNumberId = (stringId: string, details: string, mustBeDefined : boolean = false) => {
   const numberId : number | undefined = stringId ? parseInt(stringId as string) : undefined;
   if ((mustBeDefined || numberId) && isNaN(<number>numberId)) {
-    throw new InvalidIdError("InvalidId", details);
+    throw new InvalidIdError(details);
   }
 
   return numberId;
@@ -49,20 +49,20 @@ const getUserFromUuid = async (userUuid : string | undefined, errorMessage: stri
   if (!userUuid) {
     if(isCurrentUser)
     {
-      throw new UnauthorizedError("Unauthorized", "The user has not been authorized");
+      throw new UnauthorizedError("The user has not been authorized");
     }
 
-    throw new NotFoundError("UserNotFound", errorMessage ? errorMessage : "User could not be found.");
+    throw new NotFoundError(errorMessage ? errorMessage : "User could not be found.");
   }
 
   const user = await getUser(userUuid);
   if (!user) {
     if(isCurrentUser)
     {
-      throw new UnauthorizedError("Unauthorized", "The user has not been authorized");
+      throw new UnauthorizedError("The user has not been authorized");
     }
 
-    throw new NotFoundError("UserNotFound", errorMessage ? errorMessage : "User could not be found.");
+    throw new NotFoundError(errorMessage ? errorMessage : "User could not be found.");
   }
 
   return user as UserResponse;
@@ -231,7 +231,7 @@ router.get('/counts-by-priority', async (req, res) => {
     const currentUser = await getUserFromUuid(req.user?.uuid)
 
     if (!isUserUnrestricted(currentUser.userRoles)) {
-      throw new UnauthorizedError("Unauthorized", "The user is not authorized to see all todos");
+      throw new UnauthorizedError("The user is not authorized to see all todos");
     }
 
     if(!req.query.teamId) {
@@ -241,7 +241,7 @@ router.get('/counts-by-priority', async (req, res) => {
     const teamId = covertToNumberId(req.query.teamId as string, 'Invalid Team ID provided.' );
 
     if (!(await getTeamByTeamId(teamId as number))) {
-      throw new NotFoundError(`NotFound`, `There is no team with team Id: ${teamId}`);
+      throw new NotFoundError(`There is no team with team Id: ${teamId}`);
     }
 
     const todoCountsByPriority = await getTodoCountsByPriorityByTeamId(teamId as number);
@@ -261,7 +261,7 @@ router.get('/counts-by-status', async (req, res) => {
     const currentUser = await getUserFromUuid(req.user?.uuid)
 
     if (!isUserUnrestricted(currentUser.userRoles)) {
-      throw new UnauthorizedError("Unauthorized", "The user is not authorized to see all todos");
+      throw new UnauthorizedError("The user is not authorized to see all todos");
     }
 
     if(!req.query.teamId) {
@@ -271,7 +271,7 @@ router.get('/counts-by-status', async (req, res) => {
     const teamId = covertToNumberId(req.query.teamId as string, 'Invalid Team ID provided.' );
 
     if (!(await getTeamByTeamId(teamId as number))) {
-      throw new NotFoundError(`NotFound`, `There is no team with team Id: ${teamId}`);
+      throw new NotFoundError(`There is no team with team Id: ${teamId}`);
     }
 
     const todoCountsByStatus = await getTodoCountsByStatusByTeamId(teamId as number);
@@ -291,7 +291,7 @@ router.get('/by-priority', async (req, res) => {
     const currentUser = await getUserFromUuid(req.user?.uuid)
 
     if (!isUserUnrestricted(currentUser.userRoles)) {
-      throw new UnauthorizedError("Unauthorized", "The user is not authorized to see all todos");
+      throw new UnauthorizedError("The user is not authorized to see all todos");
     }
 
     if(!req.query.teamId) {
@@ -301,7 +301,7 @@ router.get('/by-priority', async (req, res) => {
     const teamId = covertToNumberId(req.query.teamId as string, 'Invalid Team ID provided.' );
 
     if (!(await getTeamByTeamId(teamId as number))) {
-      throw new NotFoundError(`NotFound`, `There is no team with team Id: ${teamId}`);
+      throw new NotFoundError(`There is no team with team Id: ${teamId}`);
     }
 
     const todos = await getTodosByPriority(teamId as number);
@@ -321,7 +321,7 @@ router.get('/by-status', async (req, res) => {
     const currentUser = await getUserFromUuid(req.user?.uuid)
 
     if (!isUserUnrestricted(currentUser.userRoles)) {
-      throw new UnauthorizedError("Unauthorized", "The user is not authorized to see all todos");
+      throw new UnauthorizedError("The user is not authorized to see all todos");
     }
 
     if(!req.query.teamId) {
@@ -331,7 +331,7 @@ router.get('/by-status', async (req, res) => {
     const teamId = covertToNumberId(req.query.teamId as string, 'Invalid Team ID provided.' );
 
     if (!(await getTeamByTeamId(teamId as number))) {
-      throw new NotFoundError(`NotFound`, `There is no team with team Id: ${teamId}`);
+      throw new NotFoundError(`There is no team with team Id: ${teamId}`);
     }
 
     const todos = await getTodosByStatus(teamId as number);
@@ -351,7 +351,7 @@ router.get('/:id/changes', async (req, res) => {
     const currentUser = await getUserFromUuid(req.user?.uuid)
 
     if (!isUserUnrestricted(currentUser.userRoles)) {
-      throw new UnauthorizedError("Unauthorized", "The user is not authorized to see all todos");
+      throw new UnauthorizedError("The user is not authorized to see all todos");
     }
 
     if(!req.params.id) {

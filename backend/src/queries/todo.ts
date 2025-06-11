@@ -209,7 +209,7 @@ export async function createTodo(createTodoPayload: CreateTodoPayload): Promise<
     assignedToId = await getUserId(createTodoPayload.assignedToUuid);
 
     if (!assignedToId) {
-      throw new NotFoundError("AssignToUserNotFound", "Assign To user does not exist");
+      throw new NotFoundError("Assign To user does not exist");
     }
   }
 
@@ -243,7 +243,7 @@ export async function updateTodo(id: number, updateTodoPayload: UpdateTodoPayloa
     assignedToId = await getUserId(updateTodoPayload.assignedToUuid);
 
     if (!assignedToId) {
-      throw new NotFoundError("AssignToUserNotFound", "Assign To user does not exist");
+      throw new NotFoundError("Assign To user does not exist");
     }
 
     setSqlQuery.push(`assigned_to_id = $${paramIndex}`);
@@ -383,8 +383,8 @@ export async function getTodosByPriority(teamId: number): Promise<TodoByPriority
       const priorityKey = row.priorityName;
       if (!groupedTodos.has(priorityKey)) {
         const priority: TodoPriority = {
-          id: row.statusId,
-          name: row.statusName,
+          id: row.priorityId,
+          name: row.priorityName,
         };
         groupedTodos.set(priorityKey, {
           priority: priority,

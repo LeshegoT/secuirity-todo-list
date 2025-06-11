@@ -94,7 +94,7 @@ async function handleResponse<T>(response: Response): Promise<T> {
     const error = new Error(errorMessage) as any;
     error.response = {
       status: response.status,
-      data: data,
+      data: data
     };
     if (response.status === 401) {
       sessionStorage.removeItem("token");
@@ -305,31 +305,31 @@ class ApiService {
     });
   }
 
-  async getTodoCountsByPriority(teamId: number): Promise<TodoCountByPriority[]> {
+  async getTodoCountsByPriority(teamId: number): Promise<TodoCountByPriority[] | Error> {
     return this.fetchWrapper(`/todos/counts-by-priority?teamId=${teamId}`, {
       method: "GET",
     });
   }
 
-  async getTodoCountsByStatus(teamId: number): Promise<TodoCountByStatus[]> {
+  async getTodoCountsByStatus(teamId: number): Promise<TodoCountByStatus[] | Error> {
     return this.fetchWrapper(`/todos/counts-by-status?teamId=${teamId}`, {
       method: "GET",
     })
   }
 
-  async getTodosByPriority(teamId: number): Promise<TodosByPriority[]> {
+  async getTodosByPriority(teamId: number): Promise<TodosByPriority[] | Error> {
     return this.fetchWrapper(`/todos/by-priority?teamId=${teamId}`, {
       method: "GET",
     })
   }
 
-  async getTodosByStatus(teamId: number): Promise<TodosByStatus[]> {
+  async getTodosByStatus(teamId: number): Promise<TodosByStatus[] | Error> {
     return this.fetchWrapper(`/todos/by-status?teamId=${teamId}`, {
       method: "GET",
     })
   }
 
-  async getTodoChanges(todoId: number, startDate?: string, endDate?: string): Promise<TodoAuditLog[]> {
+  async getTodoChanges(todoId: number, startDate?: string, endDate?: string): Promise<TodoAuditLog[] | Error> {
     let url = `/todos/${todoId}/changes`
     const params = new URLSearchParams()
 
