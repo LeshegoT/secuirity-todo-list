@@ -1,3 +1,5 @@
+ALTER TABLE todo_audit_logs DROP CONSTRAINT fk_audit_user;
+
 ALTER TABLE todo_audit_logs
 DROP COLUMN user_id;
 
@@ -23,11 +25,7 @@ ADD CONSTRAINT fk_todos_last_modified_by
     FOREIGN KEY (last_modified_by) REFERENCES users(id)
     ON DELETE RESTRICT;
 
-ALTER TABLE todo_audit_logs
-DROP COLUMN created_at;
-
-ALTER TABLE todo_audit_logs
-    ADD COLUMN created_at TIMESTAMP;
+ALTER TABLE todo_audit_logs ALTER COLUMN created_at TYPE TIMESTAMP;
 
 ALTER TABLE todo_audit_logs
     ADD COLUMN is_active BOOLEAN;
