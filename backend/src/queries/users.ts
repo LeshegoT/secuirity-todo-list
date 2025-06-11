@@ -1,4 +1,5 @@
 import { pool } from "../config/dbconfig.js";
+import { User } from "../types/types.js";
 import { UserResponse } from "./models/user-response";
 
 export async function getUserId(uuid: string): Promise<number | null> {
@@ -354,4 +355,19 @@ export async function getUserTeams(
 
   const result = await pool.query(query, [userUUID]);
   return result.rows;
+}
+
+export async function searchUsersByName(
+  query: string
+): Promise<{ uuid: string; name: string }[]> {
+  const response = await pool.query<User>(
+    `
+    SELECT name, uuid
+    FROM users
+    WHERE name ILIKE '%' || $1 || '%'
+    `,
+    [query]
+  );
+
+  return response.rows;
 }

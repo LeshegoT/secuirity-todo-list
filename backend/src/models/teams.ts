@@ -9,6 +9,5 @@ export interface Team {
 
 export interface NewTeam {
   name: string;
-  teamLeadId: number;
   members?: User[]
 }
