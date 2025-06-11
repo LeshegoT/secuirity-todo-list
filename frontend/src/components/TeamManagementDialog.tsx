@@ -1,6 +1,6 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -19,69 +19,84 @@ import {
   Box,
   CircularProgress,
   Divider,
-} from "@mui/material"
-import { PersonRemove, PersonAdd, EmojiEvents } from "@mui/icons-material"
-import type { Team, User } from "../types"
-import { apiService } from "../services/apiService"
+} from "@mui/material";
+import { PersonRemove, PersonAdd, EmojiEvents } from "@mui/icons-material";
+import type { Team, User } from "../types";
+import { apiService } from "../services/apiService";
+import { toast } from "react-toastify";
 
-// Define the response type for the search API
 interface TeamManagementDialogProps {
-  open: boolean
-  onClose: () => void
-  team: Team
-  currentUser: User
+  open: boolean;
+  onClose: () => void;
+  team: Team;
+  currentUser: User;
 }
 
-export default function TeamManagementDialog({ open, onClose, team, currentUser }: TeamManagementDialogProps) {
-  const [searchQuery, setSearchQuery] = useState("")
-  const [searchResults, setSearchResults] = useState<User[]>([])
-  const [isSearching, setIsSearching] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+export default function TeamManagementDialog({
+  open,
+  onClose,
+  team,
+  currentUser,
+}: TeamManagementDialogProps) {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<User[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Debounced search effect
   useEffect(() => {
-    let timeoutId: NodeJS.Timeout
+    let timeoutId: NodeJS.Timeout;
     if (searchQuery.length >= 2) {
-      setIsSearching(true)
-      setError(null)
+      setIsSearching(true);
+      setError(null);
 
       timeoutId = setTimeout(async () => {
         try {
-          const response = await apiService.getUIserSearchResults(searchQuery)
+          const response = await apiService.getUIserSearchResults(searchQuery);
           if (response.status === "success") {
             const filteredResults = response.data.filter(
-              (user :{uuid:string;name:string}) => !team.members.some((member) => member.uuid === user.uuid)
-            )
-            setSearchResults(filteredResults)
+              (user: { uuid: string; name: string }) =>
+                !team.members.some((member) => member.uuid === user.uuid)
+            );
+            setSearchResults(filteredResults);
           } else {
-            setError("Failed to fetch users")
-            setSearchResults([])
+            setError("Failed to fetch users");
+            setSearchResults([]);
           }
         } catch (error) {
-          setError("An error occurred while searching")
-          setSearchResults([])
+          setError("An error occurred while searching");
+          setSearchResults([]);
         } finally {
-          setIsSearching(false)
+          setIsSearching(false);
         }
-      }, 300) // 300ms debounce
+      }, 300);
     } else {
-      setSearchResults([])
-      setError(null)
-      setIsSearching(false)
+      setSearchResults([]);
+      setError(null);
+      setIsSearching(false);
     }
 
-    return () => clearTimeout(timeoutId) // Cleanup timeout
-  }, [searchQuery, team.members])
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery, team.members]);
 
-  const handleAddMember = (user: User) => {
-    console.log(`Adding user ${user.name} to team ${team.name}`)
-    setSearchQuery("")
-    setSearchResults([])
-  }
+  const handleAddMember = async (user: User) => {
+    try {
+      await apiService.updateTeam(team.id, [user.uuid], []);
+      toast.success(`User ${user.name} added to team ${team.name}`);
+    } catch (error) {
+      toast.error(`Failed to add user to team`);
+    }
+    setSearchQuery("");
+    setSearchResults([]);
+  };
 
-  const handleRemoveMember = (uuid: string) => {
-    console.log(`Removing user ${uuid} from team ${team.name}`)
-  }
+  const handleRemoveMember = async (uuid: string) => {
+    try {
+      await apiService.updateTeam(team.id, [], [uuid]);
+      toast.success(`User removed from team ${team.name}`);
+    } catch (error) {
+      toast.error(`Failed to remove user from team`);
+    }
+  };
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
@@ -100,18 +115,28 @@ export default function TeamManagementDialog({ open, onClose, team, currentUser 
                 primary={
                   <Box sx={{ display: "flex", alignItems: "center" }}>
                     {member.name}
-                    {member.uuid === team.teamLeadUuid && <EmojiEvents fontSize="small" color="warning" sx={{ ml: 1 }} />}
+                    {member.uuid === team.teamLeadUuid && (
+                      <EmojiEvents
+                        fontSize="small"
+                        color="warning"
+                        sx={{ ml: 1 }}
+                      />
+                    )}
                   </Box>
                 }
                 secondary={member.email}
               />
-              {member.uuid !== team.teamLeadUuid && member.uuid !== currentUser.uuid && (
-                <ListItemSecondaryAction>
-                  <IconButton edge="end" onClick={() => handleRemoveMember(member.uuid)}>
-                    <PersonRemove />
-                  </IconButton>
-                </ListItemSecondaryAction>
-              )}
+              {member.uuid !== team.teamLeadUuid &&
+                member.uuid !== currentUser.uuid && (
+                  <ListItemSecondaryAction>
+                    <IconButton
+                      edge="end"
+                      onClick={() => handleRemoveMember(member.uuid)}
+                    >
+                      <PersonRemove />
+                    </IconButton>
+                  </ListItemSecondaryAction>
+                )}
             </ListItem>
           ))}
         </List>
@@ -133,48 +158,79 @@ export default function TeamManagementDialog({ open, onClose, team, currentUser 
         />
 
         {searchQuery.length >= 2 && isSearching && (
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 2, textAlign: "center" }}>
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{ mt: 2, textAlign: "center" }}
+          >
             Searching...
           </Typography>
         )}
 
         {searchQuery.length >= 2 && !isSearching && error && (
-          <Typography variant="body2" color="error" sx={{ mt: 2, textAlign: "center" }}>
+          <Typography
+            variant="body2"
+            color="error"
+            sx={{ mt: 2, textAlign: "center" }}
+          >
             {error}
           </Typography>
         )}
 
-        {searchQuery.length >= 2 && !isSearching && !error && searchResults.length > 0 && (
-          <List sx={{ mt: 2, maxHeight: 240, overflow: "auto", border: 1, borderColor: "divider", borderRadius: 1 }}>
-            {searchResults.map((user) => (
-              <ListItem key={user.uuid}>
-                <ListItemAvatar>
-                  <Avatar src={user.avatar}>{user.name.charAt(0)}</Avatar>
-                </ListItemAvatar>
-                <ListItemText primary={user.name} secondary={user.email} />
-                <ListItemSecondaryAction>
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    startIcon={<PersonAdd />}
-                    onClick={() => handleAddMember(user)}
-                  >
-                    Add
-                  </Button>
-                </ListItemSecondaryAction>
-              </ListItem>
-            ))}
-          </List>
-        )}
+        {searchQuery.length >= 2 &&
+          !isSearching &&
+          !error &&
+          searchResults.length > 0 && (
+            <List
+              sx={{
+                mt: 2,
+                maxHeight: 240,
+                overflow: "auto",
+                border: 1,
+                borderColor: "divider",
+                borderRadius: 1,
+              }}
+            >
+              {searchResults.map((user) => (
+                <ListItem key={user.uuid}>
+                  <ListItemAvatar>
+                    <Avatar src={user.avatar}>{user.name.charAt(0)}</Avatar>
+                  </ListItemAvatar>
+                  <ListItemText primary={user.name} secondary={user.email} />
+                  <ListItemSecondaryAction>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      startIcon={<PersonAdd />}
+                      onClick={() => handleAddMember(user)}
+                    >
+                      Add
+                    </Button>
+                  </ListItemSecondaryAction>
+                </ListItem>
+              ))}
+            </List>
+          )}
 
-        {searchQuery.length >= 2 && !isSearching && !error && searchResults.length === 0 && (
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 2, textAlign: "center" }}>
-            No users found matching "{searchQuery}"
-          </Typography>
-        )}
+        {searchQuery.length >= 2 &&
+          !isSearching &&
+          !error &&
+          searchResults.length === 0 && (
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{ mt: 2, textAlign: "center" }}
+            >
+              No users found matching "{searchQuery}"
+            </Typography>
+          )}
 
         {searchQuery.length > 0 && searchQuery.length < 2 && (
-          <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: "block", textAlign: "center" }}>
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ mt: 1, display: "block", textAlign: "center" }}
+          >
             Type at least 2 characters to search
           </Typography>
         )}
@@ -183,5 +239,5 @@ export default function TeamManagementDialog({ open, onClose, team, currentUser 
         <Button onClick={onClose}>Close</Button>
       </DialogActions>
     </Dialog>
-  )
+  );
 }

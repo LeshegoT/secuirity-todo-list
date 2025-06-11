@@ -102,7 +102,7 @@ const Verify: React.FC = () => {
             </div>
           )}
 
-          <div className="container-card p-6"> {/* Reused container-card class for inner box */}
+          <div className="container-card p-6">
             <div className="text-center space-y-4">
               <div className="flex items-center justify-center space-x-2 mb-4">
                 <QrCodeIcon className="icon-medium icon-gray" />

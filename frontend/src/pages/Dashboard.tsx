@@ -16,14 +16,14 @@ import {
   CircularProgress,
   Button,
 } from "@mui/material";
-import Grid from "@mui/material/Grid"
+import Grid from "@mui/material/Grid";
 import { Settings, Logout, People, Assessment } from "@mui/icons-material";
 import TeamSidebar from "../components/TeamSidebar";
 import TaskList from "../components/TaskList";
 import { apiService } from "../services/apiService";
-import type {Status, Team, Priority, User} from "../types";
+import type { Status, Team, Priority, Todo } from "../types";
 import { useAuth } from "../context/authContext";
-import { useNavigate } from "react-router-dom"
+import { useNavigate } from "react-router-dom";
 
 export default function Dashboard() {
   const [selectedTeam, setSelectedTeam] = useState<number | null>(null);
@@ -34,7 +34,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
 
   const { user, logout, loading: authLoading } = useAuth();
-  const navigate = useNavigate()
+  const navigate = useNavigate();
   const open = Boolean(anchorEl);
 
   useEffect(() => {
@@ -61,7 +61,7 @@ export default function Dashboard() {
     };
 
     init();
-  }, [user])
+  }, [user]);
 
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -71,18 +71,22 @@ export default function Dashboard() {
     setAnchorEl(null);
   };
 
+  const handleTaskUpdate = async (task: Todo) => {
+    await refetchTeams();
+  };
+
   const refetchTeams = async () => {
     try {
-      const teamsRes = await apiService.retrieveUserTeams()
-      setUserTeams(teamsRes.data)
+      const teamsRes = await apiService.retrieveUserTeams();
+      setUserTeams(teamsRes.data);
     } catch (error) {
-      console.error("Error refetching teams", error)
+      console.error("Error refetching teams", error);
     }
-  }
+  };
 
   const handleNavigateToReports = () => {
-    navigate("/reports")
-  }
+    navigate("/reports");
+  };
 
   if (loading || authLoading || !user) {
     return (
@@ -99,10 +103,9 @@ export default function Dashboard() {
     );
   }
 
-    const isTeamLead = user.roles?.includes("team_lead")
+  const isTeamLead = user.roles?.includes("team_lead");
 
-
-    return (
+  return (
     <Box sx={{ display: "flex" }}>
       <CssBaseline />
       <AppBar
@@ -114,7 +117,12 @@ export default function Dashboard() {
             Teams Todo
           </Typography>
           {isTeamLead && (
-            <Button color="inherit" startIcon={<Assessment />} onClick={handleNavigateToReports} sx={{ mr: 2 }}>
+            <Button
+              color="inherit"
+              startIcon={<Assessment />}
+              onClick={handleNavigateToReports}
+              sx={{ mr: 2 }}
+            >
               Reports
             </Button>
           )}
@@ -128,11 +136,10 @@ export default function Dashboard() {
           >
             <Avatar sx={{ width: 32, height: 32 }} src={user?.avatar}>
               {(user?.name || "")
-              .split(" ")
-              .map((n) => n[0])
-              .join("") || "?"}
+                .split(" ")
+                .map((n) => n[0])
+                .join("") || "?"}
             </Avatar>
-
           </IconButton>
           <Menu
             anchorEl={anchorEl}
@@ -147,7 +154,7 @@ export default function Dashboard() {
               <Box sx={{ display: "flex", flexDirection: "column" }}>
                 <Typography variant="subtitle2">{user.name}</Typography>
                 <Typography variant="caption" color="text.secondary">
-                  {user.email} 
+                  {user.email}
                 </Typography>
               </Box>
             </MenuItem>
@@ -199,6 +206,8 @@ export default function Dashboard() {
                 selectedTeam={selectedTeam}
                 statuses={statuses}
                 priorities={priorities}
+                onTaskDelete={() => {}}
+                onTaskUpdate={handleTaskUpdate}
               />
             </Grid>
           </Grid>

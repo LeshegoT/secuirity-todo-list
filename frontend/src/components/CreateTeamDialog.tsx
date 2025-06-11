@@ -101,7 +101,7 @@ export default function CreateTeamDialog({
       }
       const response = await apiService.createTeam(teamData)
       if (response.status === "success") {
-        await onCreateTeam(teamName.trim(), selectedUsers) // Await async callback
+        await onCreateTeam(teamName.trim(), selectedUsers) 
         handleClose()
       } else {
         setTeamNameError("Failed to create team")
@@ -122,7 +122,6 @@ export default function CreateTeamDialog({
     setSelectedUsers(selectedUsers.filter((user) => user.uuid !== uuid))
   }
 
-  // Filter out current user and already selected users from search results
   const filteredUsers = searchResults.filter(
     (user) =>
       user.uuid !== currentUser.uuid &&
