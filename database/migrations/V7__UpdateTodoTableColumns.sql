@@ -1,8 +1,4 @@
-ALTER TABLE todos
-DROP COLUMN created_at;
-
-ALTER TABLE todos
-ADD COLUMN created_at TIMESTAMP;
+ALTER TABLE todos ALTER COLUMN created_at TYPE TIMESTAMP;
 
 ALTER TABLE todos
 ADD COLUMN last_modified_at TIMESTAMP;
