@@ -1,15 +1,43 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
+"use client";
+
+import type React from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  type ReactNode,
+} from "react";
 import { apiService } from "../services/apiService";
-import { decodeToken, DecodedUser } from "../utils/jwtUtils";
+import {
+  decodeToken,
+  type DecodedUser,
+  isTokenExpired,
+} from "../utils/jwtUtils";
 
 interface AuthContextType {
   user: DecodedUser | null;
   token: string | null;
   loading: boolean;
-  login: (email: string, password: string, totpToken?: string) => Promise<{ success: boolean; requiresTwoFactor?: boolean; message: string }>;
+  login: (
+    email: string,
+    password: string,
+    totpToken?: string
+  ) => Promise<{
+    success: boolean;
+    requiresTwoFactor?: boolean;
+    message: string;
+  }>;
   logout: () => void;
-  register: (name: string, email: string, password: string) => Promise<{ success: boolean; data?: any; message: string }>;
-  verify: (userId: string, token: string) => Promise<{ success: boolean; message: string }>;
+  register: (
+    name: string,
+    email: string,
+    password: string
+  ) => Promise<{ success: boolean; data?: any; message: string }>;
+  verify: (
+    userId: string,
+    token: string
+  ) => Promise<{ success: boolean; message: string }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -37,6 +65,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     console.log("Stored token:", storedToken);
 
     if (storedToken) {
+      // Check if token is expired
+      if (isTokenExpired(storedToken)) {
+        console.log("Token expired, clearing session");
+        sessionStorage.removeItem("token");
+        setLoading(false);
+        return;
+      }
+
       const decoded = decodeToken(storedToken);
       console.log("Decoded token:", decoded);
 
@@ -45,6 +81,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setUser(decoded);
         apiService.setAuthToken(storedToken);
       } else {
+        console.log("Failed to decode token, removing from storage");
         sessionStorage.removeItem("token");
       }
     }
@@ -57,25 +94,45 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const response = await apiService.login(email, password, totpToken);
 
       if (response.requiresTwoFactor) {
-        return { success: false, requiresTwoFactor: true, message: response.message };
+        return {
+          success: false,
+          requiresTwoFactor: true,
+          message: response.message,
+        };
       }
 
       if (response.token) {
+        // Check if the new token is valid and not expired
+        if (isTokenExpired(response.token)) {
+          return {
+            success: false,
+            message: "Received expired token from server",
+          };
+        }
+
         const decoded = decodeToken(response.token);
         if (decoded) {
           sessionStorage.setItem("token", response.token);
           setToken(response.token);
           setUser(decoded);
           apiService.setAuthToken(response.token);
+          console.log("Login successful, user:", decoded);
           return { success: true, message: response.message };
+        } else {
+          return {
+            success: false,
+            message: "Failed to decode user information from token",
+          };
         }
       }
 
       return { success: false, message: response.message };
     } catch (error: any) {
+      console.error("Login error:", error);
       return {
         success: false,
-        message: error.response?.data?.message || error.message || "Login failed.",
+        message:
+          error.response?.data?.message || error.message || "Login failed.",
       };
     }
   };
@@ -89,9 +146,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         message: "Registration successful! Please set up your 2FA.",
       };
     } catch (error: any) {
+      console.error("Registration error:", error);
       return {
         success: false,
-        message: error.response?.data?.message || error.message || "Registration failed.",
+        message:
+          error.response?.data?.message ||
+          error.message ||
+          "Registration failed.",
       };
     }
   };
@@ -101,17 +162,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const response = await apiService.verify(userId, totpToken);
       return {
         success: response.data.verified,
-        message: response.message
+        message: response.message,
       };
     } catch (error: any) {
+      console.error("Verification error:", error);
       return {
         success: false,
-        message: error.response?.data?.message || error.message || 'Verification failed. Please try again.'
+        message:
+          error.response?.data?.message ||
+          error.message ||
+          "Verification failed. Please try again.",
       };
     }
   };
 
   const logout = () => {
+    console.log("Logging out user");
     setToken(null);
     setUser(null);
     sessionStorage.removeItem("token");
@@ -119,7 +185,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, logout, register, verify }}>
+    <AuthContext.Provider
+      value={{ user, token, loading, login, logout, register, verify }}
+    >
       {children}
     </AuthContext.Provider>
   );

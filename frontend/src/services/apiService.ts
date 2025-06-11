@@ -34,6 +34,22 @@ interface ValidateResponse {
   message?: string;
 }
 
+interface UserManagement {
+  id: number;
+  uuid: string;
+  email: string;
+  name: string;
+  userRoles: string[];
+  isActive: boolean;
+  createdAt: string;
+  isVerified: boolean;
+}
+
+interface Role {
+  id: number;
+  name: string;
+}
+
 export type DataResponse<T> = {
   status: "success" | "error";
   data: T;
@@ -43,6 +59,8 @@ interface ApiResponse<T = any> {
   data?: T;
   message?: string;
   error?: string;
+  success?: boolean;
+  count?: number;
 }
 
 async function handleResponse<T>(response: Response): Promise<T> {
@@ -179,6 +197,57 @@ class ApiService {
 
   async retrieveStatuses(): Promise<DataResponse<Status[]>> {
     return this.fetchWrapper("/statuses", {
+      method: "GET",
+    });
+  }
+
+  // User Management Methods
+  async getUsers(): Promise<ApiResponse<UserManagement[]>> {
+    return this.fetchWrapper("/users", {
+      method: "GET",
+    });
+  }
+
+  async getUser(uuid: string): Promise<ApiResponse<UserManagement>> {
+    return this.fetchWrapper(`/users/${uuid}`, {
+      method: "GET",
+    });
+  }
+
+  async getUserRoles(): Promise<ApiResponse<Role[]>> {
+    return this.fetchWrapper("/users/roles", {
+      method: "GET",
+    });
+  }
+
+  async updateUserRoles(
+    uuid: string,
+    roles: string[],
+    operation: "add" | "remove" | "replace" = "replace"
+  ): Promise<ApiResponse> {
+    return this.fetchWrapper(`/users/${uuid}/roles`, {
+      method: "PUT",
+      body: JSON.stringify({ roles, operation }),
+    });
+  }
+
+  async toggleUserLock(uuid: string, isActive: boolean): Promise<ApiResponse> {
+    return this.fetchWrapper(`/users/${uuid}/lock`, {
+      method: "PUT",
+      body: JSON.stringify({ isActive }),
+    });
+  }
+
+  async deleteUser(uuid: string): Promise<ApiResponse> {
+    return this.fetchWrapper(`/users/${uuid}`, {
+      method: "DELETE",
+    });
+  }
+
+  async getUserTeams(
+    uuid: string
+  ): Promise<ApiResponse<{ id: number; name: string; is_lead: boolean }[]>> {
+    return this.fetchWrapper(`/users/${uuid}/teams`, {
       method: "GET",
     });
   }

@@ -16,11 +16,11 @@ import {
   CircularProgress,
 } from "@mui/material";
 import Grid from "@mui/material/Grid";
-import { Settings, Logout } from "@mui/icons-material";
+import { Settings, Logout, People } from "@mui/icons-material";
 import TeamSidebar from "../components/TeamSidebar";
 import TaskList from "../components/TaskList";
 import { apiService } from "../services/apiService";
-import { Status, Team, Priority } from "../types";
+import type { Status, Team, Priority, User } from "../types";
 import { useAuth } from "../context/authContext";
 
 export default function Dashboard() {
@@ -126,6 +126,14 @@ export default function Dashboard() {
                   {user.email} 
                 </Typography>
               </Box>
+            </MenuItem>
+            <MenuItem
+              onClick={() => {
+                handleClose();
+                window.location.href = "/users";
+              }}
+            >
+              <People fontSize="small" sx={{ mr: 1 }} /> User Management
             </MenuItem>
             <MenuItem onClick={handleClose}>
               <Settings fontSize="small" sx={{ mr: 1 }} /> Settings
