@@ -29,21 +29,30 @@ jobs:
           role-session-name: GitHub_to_AWS_via_FederatedOIDC
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Copy ssh key and modify permissions
+      - name: Copy SSH key and set permissions
         run: |
           aws s3 cp s3://sec-migration-s3-bucket/secuiritybastion.pem .
           mv secuiritybastion.pem ssh_key.pem
           chmod 600 ssh_key.pem
 
-      - name: Configure ssh tunnel through bastion host
+      - name: Configure SSH tunnel through Bastion host
         run: |
           mkdir -p ~/.ssh
           ssh-keyscan -H ${{ secrets.BASTION_HOST }} >> ~/.ssh/known_hosts
           eval "$(ssh-agent -s)"
-          ssh -fN -v -L 127.0.0.1:${{ secrets.DB_PORT }}:${{ secrets.DB_HOST }}:${{ secrets.DB_PORT }} \
-            ${{ secrets.BASTION_USER }}@${{ secrets.BASTION_HOST }} -i ssh_key.pem &
+          ssh-add ssh_key.pem
+          ssh -fN -L 127.0.0.1:${{ secrets.DB_PORT }}:${{ secrets.DB_HOST }}:${{ secrets.DB_PORT }} \
+            ${{ secrets.BASTION_USER }}@${{ secrets.BASTION_HOST }} &
 
-      - name: Generate flyway config file
+      - name: Wait for tunnel to be ready
+        run: |
+          for i in {1..10}; do
+            nc -z localhost ${{ secrets.DB_PORT }} && echo "Tunnel is ready" && break
+            echo "Waiting for tunnel..."
+            sleep 3
+          done
+
+      - name: Generate Flyway config file
         run: |
           cat > flyway.generated.conf <<EOF
           flyway.url=jdbc:postgresql://localhost:${{ secrets.DB_PORT }}/${{ secrets.DB_NAME }}
@@ -52,7 +61,13 @@ jobs:
           EOF
           cat database/flyway.conf >> flyway.generated.conf
 
+      - name: Show Flyway config (safe version)
+        run: |
+          cat flyway.generated.conf | sed 's/flyway.password=.*/flyway.password=****/'
+
+      - name: Install Flyway
+        run: sudo snap install flyway
+
       - name: Run Flyway Migration
         run: |
-          sudo snap install flyway
-          flyway migrate -configFiles=flyway.generated.conf
+          flyway -X migrate -configFiles=flyway.generated.conf
