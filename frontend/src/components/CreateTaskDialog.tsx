@@ -1,6 +1,6 @@
-"use client"
+"use client";
 
-import { useState } from "react"
+import { useState } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -14,60 +14,97 @@ import {
   MenuItem,
   FormHelperText,
   Box,
-} from "@mui/material"
-import type { Team, User, Priority } from "../types"
+} from "@mui/material";
+import type { Team, User, Priority, Status } from "../types";
+import { apiService } from "../services/apiService";
 
 interface CreateTaskDialogProps {
-  open: boolean
-  onClose: () => void
-  teams: Team[]
-  currentUser: User
-  priorities: Priority[]
+  open: boolean;
+  onClose: () => void;
+  teams: Team[];
+  currentUser: User;
+  priorities: Priority[];
+  statuses: Status[];
 }
 
-export default function CreateTaskDialog({ open, onClose, teams, currentUser, priorities }: CreateTaskDialogProps) {
-  const [title, setTitle] = useState("")
-  const [description, setDescription] = useState("")
-  const [teamId, setTeamId] = useState("")
-  const [priorityId, setPriorityId] = useState("")
-  const [assigneeId, setAssigneeId] = useState("")
+export default function CreateTaskDialog({
+  open,
+  onClose,
+  teams,
+  currentUser,
+  priorities,
+  statuses,
+}: CreateTaskDialogProps) {
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [teamId, setTeamId] = useState("");
+  const [priorityId, setPriorityId] = useState("");
+  const [assigneeId, setAssigneeId] = useState("");
+  const [titleError, setTitleError] = useState<string | null>(null); 
+  const [isLoading, setIsLoading] = useState(false);
+  const [statusId, setStatusId] = useState("");
 
-  const handleCreateTask = () => {
-    // Implement API call to create task
-    console.log({
-      title,
-      description,
-      teamId: Number(teamId),
-      priorityId: Number(priorityId),
-      assigneeId: assigneeId === "unassigned" ? null : Number(assigneeId),
-      createdBy: currentUser.uuid,
-    })
+  const handleCreateTask = async () => {
+    // Make async
+    if (!title.trim()) {
+      setTitleError("Title is required");
+      return;
+    }
 
-    // Reset form and close dialog
-    resetForm()
-    onClose()
-  }
+    try {
+      setIsLoading(true);
+      setTitleError(null);
+      const response = await apiService.createTask(
+        title,
+        assigneeId,
+        Number(teamId),
+        Number(statusId),
+        Number(priorityId),
+        description
+      );
+      if (response.status === "success") {
+        resetForm();
+        onClose();
+      } else {
+        setTitleError("Failed to create task");
+      }
+    } catch (error) {
+      setTitleError(
+        error instanceof Error
+          ? error.message
+          : "An error occurred while creating the task"
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const resetForm = () => {
-    setTitle("")
-    setDescription("")
-    setTeamId("")
-    setPriorityId("")
-    setAssigneeId("")
-  }
+    setTitle("");
+    setDescription("");
+    setTeamId("");
+    setPriorityId("");
+    setStatusId("");
+    setAssigneeId("");
+  };
 
   const handleClose = () => {
-    resetForm()
-    onClose()
-  }
+    resetForm();
+    onClose();
+  };
 
-  const selectedTeamMembers = teamId ? teams.find((t) => t.id === Number(teamId))?.members || [] : []
+  const selectedTeamMembers = teamId
+    ? teams.find((t) => t.id === Number(teamId))?.members || []
+    : [];
 
   return (
     <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
       <DialogTitle>Create New Task</DialogTitle>
       <DialogContent>
-        <Box component="form" sx={{ mt: 1, display: "flex", flexDirection: "column", gap: 2 }}>
+        <Box
+          component="form"
+          sx={{ mt: 1, display: "flex", flexDirection: "column", gap: 2 }}
+        >
           <TextField
             autoFocus
             margin="dense"
@@ -103,7 +140,11 @@ export default function CreateTaskDialog({ open, onClose, teams, currentUser, pr
               onChange={(e) => setTeamId(e.target.value)}
             >
               {teams
-                .filter((team) => team.members.some((member) => member.uuid === currentUser.uuid))
+                .filter((team) =>
+                  team.members.some(
+                    (member) => member.uuid === currentUser.uuid
+                  )
+                )
                 .map((team) => (
                   <MenuItem key={team.id} value={team.id.toString()}>
                     {team.name}
@@ -120,6 +161,23 @@ export default function CreateTaskDialog({ open, onClose, teams, currentUser, pr
               value={priorityId}
               label="Priority"
               onChange={(e) => setPriorityId(e.target.value)}
+            >
+              {statuses.map((status) => (
+                <MenuItem key={status.id} value={status.id.toString()}>
+                  {status.name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          <FormControl fullWidth required>
+            <InputLabel id="status-label">Status</InputLabel>
+            <Select
+              labelId="status-label"
+              id="priority"
+              value={statusId}
+              label="Status"
+              onChange={(e) => setStatusId(e.target.value)}
             >
               {priorities.map((priority) => (
                 <MenuItem key={priority.id} value={priority.id.toString()}>
@@ -152,10 +210,14 @@ export default function CreateTaskDialog({ open, onClose, teams, currentUser, pr
       </DialogContent>
       <DialogActions>
         <Button onClick={handleClose}>Cancel</Button>
-        <Button onClick={handleCreateTask} variant="contained" disabled={!title || !teamId || !priorityId}>
+        <Button
+          onClick={handleCreateTask}
+          variant="contained"
+          disabled={!title || !teamId || !priorityId}
+        >
           Create Task
         </Button>
       </DialogActions>
     </Dialog>
-  )
+  );
 }

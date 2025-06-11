@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import {
   Dialog,
   DialogTitle,
@@ -22,7 +22,9 @@ import {
 } from "@mui/material"
 import { PersonRemove, PersonAdd, EmojiEvents } from "@mui/icons-material"
 import type { Team, User } from "../types"
+import { apiService } from "../services/apiService"
 
+// Define the response type for the search API
 interface TeamManagementDialogProps {
   open: boolean
   onClose: () => void
@@ -34,44 +36,50 @@ export default function TeamManagementDialog({ open, onClose, team, currentUser 
   const [searchQuery, setSearchQuery] = useState("")
   const [searchResults, setSearchResults] = useState<User[]>([])
   const [isSearching, setIsSearching] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  // Add this mock function to simulate user search - replace with actual API call
-  const searchUsers = async (query: string) => {
-    setIsSearching(true)
-    // Simulate API delay
-    setTimeout(() => {
-      // Mock user database - replace with actual API call
-      const allUsers = [
-        { uuid: "1bd68a82-135c-4158-8541-927616b64c16", name: "Alice Cooper", email: "alice@example.com" },
-        { uuid: "1bd68a82-135c-4158-8541-927616b64c16", name: "Bob Smith", email: "bob@example.com" },
-        { uuid: "1bd68a82-135c-4158-8541-927616b64c16", name: "Charlie Brown", email: "charlie@example.com" },
-        { uuid: "1bd68a82-135c-4158-8541-927616b64c16", name: "Diana Prince", email: "diana@example.com" },
-        { uuid: "1bd68a82-135c-4158-8541-927616b64c16", name: "Edward Norton", email: "edward@example.com" },
-      ]
+  // Debounced search effect
+  useEffect(() => {
+    let timeoutId: NodeJS.Timeout
+    if (searchQuery.length >= 2) {
+      setIsSearching(true)
+      setError(null)
 
-      const results = allUsers.filter(
-        (user) =>
-          (user.name.toLowerCase().includes(query.toLowerCase()) ||
-            user.email.toLowerCase().includes(query.toLowerCase())) &&
-          !team.members.some((member) => member.uuid === user.uuid),
-      )
-
-      setSearchResults(results)
+      timeoutId = setTimeout(async () => {
+        try {
+          const response = await apiService.getUIserSearchResults(searchQuery)
+          if (response.status === "success") {
+            const filteredResults = response.data.filter(
+              (user :{uuid:string;name:string}) => !team.members.some((member) => member.uuid === user.uuid)
+            )
+            setSearchResults(filteredResults)
+          } else {
+            setError("Failed to fetch users")
+            setSearchResults([])
+          }
+        } catch (error) {
+          setError("An error occurred while searching")
+          setSearchResults([])
+        } finally {
+          setIsSearching(false)
+        }
+      }, 300) // 300ms debounce
+    } else {
+      setSearchResults([])
+      setError(null)
       setIsSearching(false)
-    }, 500)
-  }
+    }
 
-  // Add this function to handle adding a user to the team
+    return () => clearTimeout(timeoutId) // Cleanup timeout
+  }, [searchQuery, team.members])
+
   const handleAddMember = (user: User) => {
-    // Handle adding member to team - replace with actual API call
     console.log(`Adding user ${user.name} to team ${team.name}`)
     setSearchQuery("")
     setSearchResults([])
   }
 
-  // Add this function to handle removing a user from the team
   const handleRemoveMember = (uuid: string) => {
-    // Handle removing member from team - replace with actual API call
     console.log(`Removing user ${uuid} from team ${team.name}`)
   }
 
@@ -118,20 +126,25 @@ export default function TeamManagementDialog({ open, onClose, team, currentUser 
           label="Search users by name or email"
           variant="outlined"
           value={searchQuery}
-          onChange={(e) => {
-            setSearchQuery(e.target.value)
-            if (e.target.value.length >= 2) {
-              searchUsers(e.target.value)
-            } else {
-              setSearchResults([])
-            }
-          }}
+          onChange={(e) => setSearchQuery(e.target.value)}
           InputProps={{
             endAdornment: isSearching ? <CircularProgress size={20} /> : null,
           }}
         />
 
-        {searchResults.length > 0 && (
+        {searchQuery.length >= 2 && isSearching && (
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 2, textAlign: "center" }}>
+            Searching...
+          </Typography>
+        )}
+
+        {searchQuery.length >= 2 && !isSearching && error && (
+          <Typography variant="body2" color="error" sx={{ mt: 2, textAlign: "center" }}>
+            {error}
+          </Typography>
+        )}
+
+        {searchQuery.length >= 2 && !isSearching && !error && searchResults.length > 0 && (
           <List sx={{ mt: 2, maxHeight: 240, overflow: "auto", border: 1, borderColor: "divider", borderRadius: 1 }}>
             {searchResults.map((user) => (
               <ListItem key={user.uuid}>
@@ -154,7 +167,7 @@ export default function TeamManagementDialog({ open, onClose, team, currentUser 
           </List>
         )}
 
-        {searchQuery.length >= 2 && searchResults.length === 0 && !isSearching && (
+        {searchQuery.length >= 2 && !isSearching && !error && searchResults.length === 0 && (
           <Typography variant="body2" color="text.secondary" sx={{ mt: 2, textAlign: "center" }}>
             No users found matching "{searchQuery}"
           </Typography>

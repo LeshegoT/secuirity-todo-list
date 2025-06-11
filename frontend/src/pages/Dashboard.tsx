@@ -68,6 +68,16 @@ export default function Dashboard() {
     setAnchorEl(null);
   };
 
+  const refetchTeams = async () => {
+    try {
+      const teamsRes = await apiService.retrieveUserTeams()
+      setUserTeams(teamsRes.data)
+    } catch (error) {
+      console.error("Error refetching teams", error)
+    }
+  }
+
+
   if (loading || authLoading || !user) {
     return (
       <Box
@@ -159,6 +169,7 @@ export default function Dashboard() {
                 currentUser={user}
                 selectedTeam={selectedTeam}
                 onSelectTeam={setSelectedTeam}
+                refetchTeams={refetchTeams}
               />
             </Grid>
             <Grid>
