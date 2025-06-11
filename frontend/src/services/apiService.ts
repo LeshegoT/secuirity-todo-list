@@ -1,4 +1,13 @@
-import { Status, Team, Todo } from "../types";
+import type {
+  Status,
+  Team,
+  Todo,
+  TodoAuditLog,
+  TodoCountByPriority,
+  TodoCountByStatus,
+  TodosByPriority,
+  TodosByStatus,
+} from "../types";
 
 interface User {
   id: string;
@@ -295,6 +304,53 @@ class ApiService {
       }),
     });
   }
+
+  async getTodoCountsByPriority(teamId: number): Promise<TodoCountByPriority[]> {
+    return this.fetchWrapper(`/todos/counts-by-priority?teamId=${teamId}`, {
+      method: "GET",
+    });
+  }
+
+  async getTodoCountsByStatus(teamId: number): Promise<TodoCountByStatus[]> {
+    return this.fetchWrapper(`/todos/counts-by-status?teamId=${teamId}`, {
+      method: "GET",
+    })
+  }
+
+  async getTodosByPriority(teamId: number): Promise<TodosByPriority[]> {
+    return this.fetchWrapper(`/todos/by-priority?teamId=${teamId}`, {
+      method: "GET",
+    })
+  }
+
+  async getTodosByStatus(teamId: number): Promise<TodosByStatus[]> {
+    return this.fetchWrapper(`/todos/by-status?teamId=${teamId}`, {
+      method: "GET",
+    })
+  }
+
+  async getTodoChanges(todoId: number, startDate?: string, endDate?: string): Promise<TodoAuditLog[]> {
+    let url = `/todos/${todoId}/changes`
+    const params = new URLSearchParams()
+
+    if (startDate) {
+      params.append("startDate", startDate)
+    }
+
+    if (endDate) {
+      params.append("endDate", endDate)
+    }
+
+    const queryString = params.toString()
+    if (queryString) {
+      url += `?${queryString}`
+    }
+
+    return this.fetchWrapper(url, {
+      method: "GET",
+    })
+  }
 }
+
 
 export const apiService = new ApiService();

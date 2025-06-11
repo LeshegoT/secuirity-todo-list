@@ -5,21 +5,28 @@ import {TodoPriority} from "../../models/todo-priority";
 export interface RawTodo {
     id: number;
     title: string;
-    assignedToId: number;
     teamId: number;
     statusId: number;
     priorityId: number;
     createdAt: Date;
-    createdBy: number;
+    createdByUuid: string;
+    createdByName: string;
+    createdByEmail: string;
     description: string;
     isActive: boolean;
+    lastModifiedAt: Date;
+    lastModifiedByUuid: string;
+    lastModifiedByName: string;
+    lastModifiedByEmail: string;
+    assignedToUuid: string;
     assignedToName: string;
     assignedToEmail: string;
     teamName: string;
+    teamLeadUuid: string;
+    teamLeadName: string;
+    teamLeadEmail: string;
     statusName: string;
     priorityName: string;
-    createdByName: string;
-    createdByEmail: string;
 }
 export interface TodoResponse extends Todo {
     assignedToUser?: UserInTodoResponse | null;
@@ -30,7 +37,7 @@ export interface TodoResponse extends Todo {
 }
 
 export interface UserInTodoResponse  {
-    id: number;
+    uuid: string;
     name: string;
     email: string;
 }
@@ -38,6 +45,7 @@ export interface UserInTodoResponse  {
 export interface TeamInTodoResponse  {
     id: number;
     name: string;
+    teamLead: UserInTodoResponse
 }
 
 export interface UpdateTodoPayload {
@@ -48,6 +56,7 @@ export interface UpdateTodoPayload {
     priorityId?: number;
     description?: string;
     isActive?: boolean;
+    lastModifiedBy: number;
 }
 
 export interface UserResponse {
@@ -68,4 +77,24 @@ export interface CreateTodoPayload {
     priorityId: number;
     createdBy: number;
     description: string;
+}
+
+export interface TodoCountByPriorityResponse {
+    priority : TodoPriority;
+    todoCount : number;
+}
+
+export interface TodoCountByStatusResponse {
+    status : TodoStatus;
+    todoCount : number;
+}
+
+export interface TodoByPriorityResponse {
+    priority : TodoPriority;
+    todos : TodoResponse[];
+}
+
+export interface TodoByStatusResponse {
+    status : TodoStatus;
+    todos : TodoResponse[];
 }

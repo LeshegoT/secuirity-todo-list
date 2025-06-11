@@ -35,3 +35,15 @@ export async function createTeam(teamLeadUUid : string, newTeam: NewTeam): Promi
     members: newTeam.members || [],
   };
 }
+
+export async function getTeamByTeamId(teamId: number): Promise<Team | null> {
+  const response = await pool.query(
+    `
+    SELECT *
+    FROM teams
+    WHERE id = $1
+    `,
+    [teamId]
+  );
+  return response.rows[0];
+}
