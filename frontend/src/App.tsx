@@ -6,6 +6,7 @@ import { AuthProvider, useAuth } from './context/authContext';
 import './App.css'; 
 import LoginPage from './pages/LoginPage';
 import UserManagement from "./components/UserManagement"
+import ReportingPage from "./pages/ReportingPage"
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth();
@@ -67,6 +68,14 @@ const AppContent: React.FC = () => {
             </ProtectedRoute>
           }
         />
+          <Route
+            path="/reports"
+            element={
+              <ProtectedRoute>
+                <ReportingPage />
+              </ProtectedRoute>
+            }
+          />
         </Routes>
       </div>
     </Router>

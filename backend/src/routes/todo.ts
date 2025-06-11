@@ -13,8 +13,8 @@ import {getTeamByTeamId} from "../queries/teams.js";
 
 const router = Router();
 
-const authorisedTodoRoles = ["Team Lead", "Todo User"];
-const unrestrictedTodoRoles = ["Team Lead"];
+const authorisedTodoRoles = ["team_lead", "team_member"];
+const unrestrictedTodoRoles = ["team_lead"];
 
 const isUserAuthorised = (userRoles: string[], details : string) => {
   for (const userRole of userRoles) {

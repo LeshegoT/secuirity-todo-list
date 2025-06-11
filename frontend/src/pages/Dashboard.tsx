@@ -14,14 +14,16 @@ import {
   MenuItem,
   Container,
   CircularProgress,
+  Button,
 } from "@mui/material";
-import Grid from "@mui/material/Grid";
-import { Settings, Logout, People } from "@mui/icons-material";
+import Grid from "@mui/material/Grid"
+import { Settings, Logout, People, Assessment } from "@mui/icons-material";
 import TeamSidebar from "../components/TeamSidebar";
 import TaskList from "../components/TaskList";
 import { apiService } from "../services/apiService";
-import type { Status, Team, Priority, User } from "../types";
+import type {Status, Team, Priority, User} from "../types";
 import { useAuth } from "../context/authContext";
+import { useNavigate } from "react-router-dom"
 
 export default function Dashboard() {
   const [selectedTeam, setSelectedTeam] = useState<number | null>(null);
@@ -32,6 +34,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
 
   const { user, logout, loading: authLoading } = useAuth();
+  const navigate = useNavigate()
   const open = Boolean(anchorEl);
 
   useEffect(() => {
@@ -58,7 +61,7 @@ export default function Dashboard() {
     };
 
     init();
-  }, [user]);
+  }, [user])
 
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -77,6 +80,9 @@ export default function Dashboard() {
     }
   }
 
+  const handleNavigateToReports = () => {
+    navigate("/reports")
+  }
 
   if (loading || authLoading || !user) {
     return (
@@ -93,7 +99,10 @@ export default function Dashboard() {
     );
   }
 
-  return (
+    const isTeamLead = user.roles?.includes("team_lead")
+
+
+    return (
     <Box sx={{ display: "flex" }}>
       <CssBaseline />
       <AppBar
@@ -104,6 +113,11 @@ export default function Dashboard() {
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
             Teams Todo
           </Typography>
+          {isTeamLead && (
+            <Button color="inherit" startIcon={<Assessment />} onClick={handleNavigateToReports} sx={{ mr: 2 }}>
+              Reports
+            </Button>
+          )}
           <IconButton
             onClick={handleClick}
             size="small"
@@ -113,7 +127,7 @@ export default function Dashboard() {
             aria-expanded={open ? "true" : undefined}
           >
             <Avatar sx={{ width: 32, height: 32 }} src={user?.avatar}>
-              {(user?.name || "") // Accessing user.name here
+              {(user?.name || "")
               .split(" ")
               .map((n) => n[0])
               .join("") || "?"}
@@ -145,6 +159,11 @@ export default function Dashboard() {
             >
               <People fontSize="small" sx={{ mr: 1 }} /> User Management
             </MenuItem>
+            {isTeamLead && (
+              <MenuItem onClick={handleNavigateToReports}>
+                <Assessment fontSize="small" sx={{ mr: 1 }} /> Reports
+              </MenuItem>
+            )}
             <MenuItem onClick={handleClose}>
               <Settings fontSize="small" sx={{ mr: 1 }} /> Settings
             </MenuItem>
