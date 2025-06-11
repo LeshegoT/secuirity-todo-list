@@ -53,7 +53,7 @@ const StatusDistributionChart: React.FC<StatusDistributionChartProps> = ({ data,
       <Typography variant="h6" gutterBottom>
         Tasks by Status
       </Typography>
-      <Box sx={{ width: "100%", height: 220 }}>
+      <Box sx={{ width: 500, height: 220 }}>
         <ResponsiveContainer>
           <BarChart
             data={chartData}

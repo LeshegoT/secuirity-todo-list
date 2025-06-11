@@ -383,8 +383,8 @@ export async function getTodosByPriority(teamId: number): Promise<TodoByPriority
       const priorityKey = row.priorityName;
       if (!groupedTodos.has(priorityKey)) {
         const priority: TodoPriority = {
-          id: row.statusId,
-          name: row.statusName,
+          id: row.priorityId,
+          name: row.priorityName,
         };
         groupedTodos.set(priorityKey, {
           priority: priority,

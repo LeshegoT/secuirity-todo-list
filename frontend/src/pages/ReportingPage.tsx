@@ -339,13 +339,13 @@ const ReportingPage: React.FC = () => {
           </Box>
 
           <TabPanel value={tabValue} index={0}>
-            <Grid container spacing={3}>
-              <Grid>
-                <PriorityDistributionChart data={priorityCounts} loading={loadingPriorityCounts} />
-              </Grid>
-              <Grid>
-                <StatusDistributionChart data={statusCounts} loading={loadingStatusCounts} />
-              </Grid>
+            <Grid container>
+              {/*<Grid>*/}
+              {/*  <PriorityDistributionChart data={priorityCounts} loading={loadingPriorityCounts} />*/}
+              {/*</Grid>*/}
+              {/*<Grid>*/}
+              {/*  <StatusDistributionChart data={statusCounts} loading={loadingStatusCounts} />*/}
+              {/*</Grid>*/}
             </Grid>
           </TabPanel>
 
@@ -376,7 +376,7 @@ const ReportingPage: React.FC = () => {
           </TabPanel>
 
           <TabPanel value={tabValue} index={3}>
-            <Grid container spacing={3}>
+            <Grid container>
               <Grid>
                 <Paper sx={{ p: 3, height: "100%" }}>
                   <Typography variant="h6" gutterBottom>
