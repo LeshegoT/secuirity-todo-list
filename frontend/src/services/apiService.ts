@@ -96,7 +96,7 @@ async function handleResponse<T>(response: Response): Promise<T> {
       status: response.status,
       data: data
     };
-    if (response.status === 401 && response.url.includes("/login")) {
+    if (response.status === 401) {
       sessionStorage.removeItem("token");
       sessionStorage.removeItem("user");
       window.location.href = "/login";
