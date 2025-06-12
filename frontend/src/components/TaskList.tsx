@@ -13,6 +13,9 @@ import { Add, RadioButtonUnchecked } from "@mui/icons-material";
 import TaskCard from "./TaskCard";
 import CreateTaskDialog from "./CreateTaskDialog";
 import type { Todo, Team, User, Status, Priority } from "../types";
+import EditTaskDialog from "./EditTaskDialog";
+import { apiService } from "../services/apiService";
+import { toast } from "react-toastify";
 interface TaskListProps {
   todos: Todo[];
   teams: Team[];
@@ -20,6 +23,8 @@ interface TaskListProps {
   selectedTeam: number | null;
   statuses: Status[];
   priorities: Priority[];
+  onTaskUpdate: (task: Todo) => void;
+  onTaskDelete: (task: Todo) => void;
 }
 
 export default function TaskList({
@@ -29,8 +34,11 @@ export default function TaskList({
   selectedTeam,
   statuses,
   priorities,
+  onTaskUpdate,
 }: TaskListProps) {
   const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [taskToEdit, setTaskToEdit] = useState<Todo | null>(null);
 
   const filteredTodos = selectedTeam
     ? todos.filter((todo) => todo.teamId === selectedTeam)
@@ -42,34 +50,55 @@ export default function TaskList({
         )
       );
 
-  const handleAssignToSelf = (todoId: number) => {
-    console.log(`Assigning task ${todoId} to self`);
-    // Implement API call to assign task
+  const handleAssignToSelf = async (todoId: number) => {
+    console.log(todoId);
+    try {
+      await apiService.updateTask(todoId, {
+        assignedToUuid: currentUser.uuid,
+        lastModifiedBy: currentUser.uuid,
+      });
+      toast.success("Task assigned successfully");
+    } catch (error) {
+      toast.error("Failed to assign task");
+    }
   };
 
-  const handleUnassignSelf = (todoId: number) => {
-    console.log(`Unassigning self from task ${todoId}`);
-    // Implement API call to unassign task
+  const handleUnassignSelf = async (todoId: number) => {
+    try {
+      await apiService.updateTask(todoId, {
+        assignedToUuid: null,
+        lastModifiedBy: currentUser.uuid,
+      });
+      toast.success("Task unassigned successfully");
+    } catch (error) {
+      toast.error("Failed to unassign task");
+    }
   };
 
-  const handleMarkComplete = (todoId: number) => {
-    console.log(`Marking task ${todoId} as complete`);
-    // Implement API call to mark task complete
+  const handleMarkComplete = async (todoId: number) => {
+    const status = statuses.find(
+      (status) => status.name.toLowerCase() === "completed"
+    );
+    if (status) {
+      try {
+        const previouslyAssigned = filteredTodos.filter(
+          (todo) => todo.id === todoId
+        );
+        await apiService.updateTask(todoId, {
+          statusId: status.id,
+          lastModifiedBy: currentUser.uuid,
+          assignedToUuid: previouslyAssigned[0].assignedToId,
+        });
+        toast.success("Task unassigned successfully");
+      } catch (error) {
+        toast.error("Failed to unassign task");
+      }
+    }
   };
 
-  const handleDeleteTask = (todoId: number) => {
-    console.log(`Deleting task ${todoId}`);
-    // Implement API call to delete task
-  };
-
-  const handleAssignToUser = (todoId: number, uuid: string) => {
-    console.log(`Assigning task ${todoId} to user ${uuid}`);
-    // Implement API call to assign task to user
-  };
-
-  const handleEditTask = (todoId: number) => {
-    console.log(`Editing task ${todoId}`);
-    // Implement API call to edit task or open edit dialog
+  const handleEditTask = (task: Todo): void => {
+    setTaskToEdit(task);
+    setEditDialogOpen(true);
   };
 
   return (
@@ -104,9 +133,7 @@ export default function TaskList({
             onAssignToSelf={handleAssignToSelf}
             onUnassignSelf={handleUnassignSelf}
             onMarkComplete={handleMarkComplete}
-            onDeleteTask={handleDeleteTask}
-            onAssignToUser={handleAssignToUser}
-            onEditTask={handleEditTask}
+            onEditTask={() => handleEditTask(todo)}
           />
         ))}
 
@@ -136,6 +163,20 @@ export default function TaskList({
         currentUser={currentUser}
         priorities={priorities}
         statuses={statuses}
+      />
+      <EditTaskDialog
+        open={editDialogOpen}
+        onClose={() => {
+          setEditDialogOpen(false);
+          setTaskToEdit(null);
+        }}
+        task={taskToEdit}
+        teams={teams}
+        allUsers={[]}
+        currentUser={currentUser}
+        onTaskUpdate={() => onTaskUpdate}
+        statuses={statuses}
+        priorities={priorities}
       />
     </Box>
   );

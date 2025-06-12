@@ -229,7 +229,7 @@ export async function createTodo(createTodoPayload: CreateTodoPayload): Promise<
 }
 
 export async function updateTodo(id: number, updateTodoPayload: UpdateTodoPayload): Promise<TodoResponse> {
-  const params: (number | string | boolean)[] = [id, updateTodoPayload.lastModifiedBy];
+  const params: (number | string | boolean | null)[] = [id, updateTodoPayload.lastModifiedBy];
   const setSqlQuery = [`last_modified_by = $${2}`, `last_modified_at = NOW()`];
   let paramIndex = 3;
 
@@ -238,10 +238,16 @@ export async function updateTodo(id: number, updateTodoPayload: UpdateTodoPayloa
     params.push(updateTodoPayload.title);
     paramIndex++;
   }
-  if (updateTodoPayload.assignedToUuid) {
-    let assignedToId : number | null;
-    assignedToId = await getUserId(updateTodoPayload.assignedToUuid);
+  if (Object.prototype.hasOwnProperty.call(updateTodoPayload, "assignedToUuid")) {
+  const value = updateTodoPayload.assignedToUuid;
 
+  if (value === undefined) {
+  } else if (value === null) {
+    setSqlQuery.push(`assigned_to_id = $${paramIndex}`);
+    params.push(null);
+    paramIndex++;
+  } else {
+    const assignedToId = await getUserId(value);
     if (!assignedToId) {
       throw new NotFoundError("Assign To user does not exist");
     }
@@ -250,6 +256,10 @@ export async function updateTodo(id: number, updateTodoPayload: UpdateTodoPayloa
     params.push(assignedToId);
     paramIndex++;
   }
+}
+
+
+
   if (updateTodoPayload.teamId) {
     setSqlQuery.push(`team_id = $${paramIndex}`);
     params.push(updateTodoPayload.teamId);

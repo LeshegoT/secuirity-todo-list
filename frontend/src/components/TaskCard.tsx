@@ -11,13 +11,9 @@ import {
   Box,
   Button,
   IconButton,
-  Menu,
-  MenuItem,
   Avatar,
-  ListItemIcon,
-  ListItemText,
 } from "@mui/material"
-import { CheckCircle, CalendarToday, Flag, MoreVert, PersonAdd, Delete, PersonRemove, Edit } from "@mui/icons-material"
+import { CheckCircle, CalendarToday, Flag, MoreVert, PersonAdd,PersonRemove, Edit } from "@mui/icons-material"
 import type { Todo, Team, User, Status, Priority } from "../types"
 
 interface TaskCardProps {
@@ -29,9 +25,7 @@ interface TaskCardProps {
   onAssignToSelf: (todoId: number) => void
   onUnassignSelf: (todoId: number) => void
   onMarkComplete: (todoId: number) => void
-  onDeleteTask: (todoId: number) => void
-  onAssignToUser: (todoId: number, uuid: string) => void
-  onEditTask: (todoId: number) => void
+  onEditTask ?: () => void
 }
 
 export default function TaskCard({
@@ -43,20 +37,11 @@ export default function TaskCard({
   onAssignToSelf,
   onUnassignSelf,
   onMarkComplete,
-  onDeleteTask,
-  onAssignToUser,
   onEditTask,
 }: TaskCardProps) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const open = Boolean(anchorEl)
 
-  const handleClick = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget)
-  }
-
-  const handleClose = () => {
-    setAnchorEl(null)
-  }
 
   const team = teams.find((t) => t.id === todo.teamId)
   const isTeamLead = team?.teamLeadUuid === currentUser.uuid
@@ -154,48 +139,16 @@ export default function TaskCard({
           </Box>
 
           <Box sx={{ display: "flex", gap: 1, alignItems: "flex-start", ml: 2 }}>
-            {/* Team lead actions */}
+    
             {isTeamLead && (
               <>
-                <IconButton size="small" onClick={() => onEditTask(todo.id)}>
+                <IconButton size="small"onClick={onEditTask}>
                   <Edit fontSize="small" />
                 </IconButton>
-
-                <IconButton
-                  size="small"
-                  onClick={handleClick}
-                  aria-controls={open ? "task-menu" : undefined}
-                  aria-haspopup="true"
-                  aria-expanded={open ? "true" : undefined}
-                >
-                  <MoreVert fontSize="small" />
-                </IconButton>
-
-                <Menu id="task-menu" anchorEl={anchorEl} open={open} onClose={handleClose} onClick={handleClose}>
-                  <MenuItem onClick={() => onDeleteTask(todo.id)}>
-                    <ListItemIcon>
-                      <Delete fontSize="small" />
-                    </ListItemIcon>
-                    <ListItemText>Delete Task</ListItemText>
-                  </MenuItem>
-
-                  {team?.members.map((member) => (
-                    <MenuItem
-                      key={member.uuid}
-                      onClick={() => onAssignToUser(todo.id, member.uuid)}
-                      disabled={todo.assignedToId === member.uuid}
-                    >
-                      <ListItemIcon>
-                        <PersonAdd fontSize="small" />
-                      </ListItemIcon>
-                      <ListItemText>Assign to {member.name}</ListItemText>
-                    </MenuItem>
-                  ))}
-                </Menu>
               </>
             )}
 
-            {/* Regular user actions */}
+    
             {!isAssignedToMe && todo.assignedToId === null && (
               <Button variant="outlined" size="small" startIcon={<PersonAdd />} onClick={() => onAssignToSelf(todo.id)}>
                 Assign to Me

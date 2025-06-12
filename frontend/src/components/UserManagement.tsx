@@ -44,7 +44,7 @@ import {
 import { ArrowBack, Lock, LockOpen, Delete, Security, CheckCircle, Cancel } from "@mui/icons-material"
 import "../App.css"
 
-interface UserManagement {
+interface User {
   id: number
   uuid: string
   email: string
@@ -65,11 +65,11 @@ const UserManagement: React.FC = () => {
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down("md"))
 
-  const [users, setUsers] = useState<UserManagement[]>([])
+  const [users, setUsers] = useState<User[]>([])
   const [roles, setRoles] = useState<Role[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [selectedUser, setSelectedUser] = useState<UserManagement | null>(null)
+  const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const [showRoleModal, setShowRoleModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [selectedRoles, setSelectedRoles] = useState<string[]>([])
@@ -118,20 +118,20 @@ const UserManagement: React.FC = () => {
     }
   }
 
-  const canModifyUser = (targetUser: UserManagement) => {
+  const canModifyUser = (targetUser: User) => {
     if (isAccessAdmin) return true
     if (isTeamLead && targetUser.uuid !== user?.uuid) return true
     return false
   }
 
-  const canViewUser = (targetUser: UserManagement) => {
+  const canViewUser = (targetUser: User) => {
     if (isAccessAdmin) return true
     if (isTeamLead) return true
     if (isTeamMember && targetUser.uuid === user?.uuid) return true
     return false
   }
 
-  const handleToggleUserLock = async (targetUser: UserManagement) => {
+  const handleToggleUserLock = async (targetUser: User) => {
     if (!canModifyUser(targetUser)) return
 
     try {
@@ -183,14 +183,14 @@ const UserManagement: React.FC = () => {
     }
   }
 
-  const openRoleModal = (targetUser: UserManagement) => {
+  const openRoleModal = (targetUser: User) => {
     if (!isAccessAdmin) return
     setSelectedUser(targetUser)
     setSelectedRoles(targetUser.userRoles)
     setShowRoleModal(true)
   }
 
-  const openDeleteModal = (targetUser: UserManagement) => {
+  const openDeleteModal = (targetUser: User) => {
     if (!canModifyUser(targetUser)) return
     setSelectedUser(targetUser)
     setShowDeleteModal(true)
@@ -228,7 +228,7 @@ const UserManagement: React.FC = () => {
     }
   }
 
-  const UserCard = ({ targetUser }: { targetUser: UserManagement }) => (
+  const UserCard = ({ targetUser }: { targetUser: User }) => (
     <Card sx={{ mb: 2 }}>
       <CardContent>
         <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
@@ -308,7 +308,7 @@ const UserManagement: React.FC = () => {
 
       <CardActions sx={{ justifyContent: "center", p: 2 }}>
         <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", justifyContent: "center" }}>
-          {/* Role Management - Only for access_administrator */}
+     
           {isAccessAdmin && canModifyUser(targetUser) && (
             <Tooltip title="Manage Roles">
               <IconButton size="small" onClick={() => openRoleModal(targetUser)} disabled={actionLoading}>
@@ -317,7 +317,7 @@ const UserManagement: React.FC = () => {
             </Tooltip>
           )}
 
-          {/* Lock/Unlock */}
+     
           {canModifyUser(targetUser) && (
             <Tooltip title={targetUser.isActive ? "Lock User" : "Unlock User"}>
               <IconButton
@@ -331,7 +331,7 @@ const UserManagement: React.FC = () => {
             </Tooltip>
           )}
 
-          {/* Delete */}
+    
           {canModifyUser(targetUser) && (
             <Tooltip title="Delete User">
               <IconButton
@@ -491,7 +491,7 @@ const UserManagement: React.FC = () => {
                           </TableCell>
                           <TableCell align="center">
                             <Box sx={{ display: "flex", justifyContent: "center", gap: 1 }}>
-                              {/* Role Management - Only for access_administrator */}
+                         
                               {isAccessAdmin && canModifyUser(targetUser) && (
                                 <Tooltip title="Manage Roles">
                                   <IconButton
@@ -504,7 +504,7 @@ const UserManagement: React.FC = () => {
                                 </Tooltip>
                               )}
 
-                              {/* Lock/Unlock */}
+                       
                               {canModifyUser(targetUser) && (
                                 <Tooltip title={targetUser.isActive ? "Lock User" : "Unlock User"}>
                                   <IconButton
@@ -518,7 +518,7 @@ const UserManagement: React.FC = () => {
                                 </Tooltip>
                               )}
 
-                              {/* Delete */}
+                        
                               {canModifyUser(targetUser) && (
                                 <Tooltip title="Delete User">
                                   <IconButton
@@ -543,7 +543,7 @@ const UserManagement: React.FC = () => {
         </Container>
       </Box>
 
-      {/* Role Management Modal */}
+ 
       <Dialog open={showRoleModal} onClose={() => setShowRoleModal(false)} maxWidth="sm" fullWidth>
         <DialogTitle>Manage Roles for {selectedUser?.name}</DialogTitle>
         <DialogContent>
@@ -596,7 +596,7 @@ const UserManagement: React.FC = () => {
         </DialogActions>
       </Dialog>
 
-      {/* Delete Confirmation Modal */}
+
       <Dialog open={showDeleteModal} onClose={() => setShowDeleteModal(false)}>
         <DialogTitle>Delete User</DialogTitle>
         <DialogContent>

@@ -65,9 +65,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     console.log("Stored token:", storedToken);
 
     if (storedToken) {
-      // Check if token is expired
       if (isTokenExpired(storedToken)) {
-        console.log("Token expired, clearing session");
         sessionStorage.removeItem("token");
         setLoading(false);
         return;
@@ -102,7 +100,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
 
       if (response.token) {
-        // Check if the new token is valid and not expired
         if (isTokenExpired(response.token)) {
           return {
             success: false,

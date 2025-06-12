@@ -17,6 +17,7 @@ import {
 } from "@mui/material";
 import type { Team, User, Priority, Status } from "../types";
 import { apiService } from "../services/apiService";
+import { toast } from "react-toastify";
 
 interface CreateTaskDialogProps {
   open: boolean;
@@ -40,12 +41,11 @@ export default function CreateTaskDialog({
   const [teamId, setTeamId] = useState("");
   const [priorityId, setPriorityId] = useState("");
   const [assigneeId, setAssigneeId] = useState("");
-  const [titleError, setTitleError] = useState<string | null>(null); 
+  const [titleError, setTitleError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [statusId, setStatusId] = useState("");
 
   const handleCreateTask = async () => {
-    // Make async
     if (!title.trim()) {
       setTitleError("Title is required");
       return;
@@ -62,18 +62,10 @@ export default function CreateTaskDialog({
         Number(priorityId),
         description
       );
-      if (response.status === "success") {
-        resetForm();
-        onClose();
-      } else {
-        setTitleError("Failed to create task");
-      }
+      resetForm();
+      toast.success("Task created successfully");
     } catch (error) {
-      setTitleError(
-        error instanceof Error
-          ? error.message
-          : "An error occurred while creating the task"
-      );
+      toast.error("An error occurred while creating the task");
     } finally {
       setIsLoading(false);
     }
@@ -196,7 +188,7 @@ export default function CreateTaskDialog({
               label="Assign To"
               onChange={(e) => setAssigneeId(e.target.value)}
             >
-              <MenuItem value="unassigned">Unassigned</MenuItem>
+              <MenuItem value={undefined}>Unassigned</MenuItem>
               {teamId &&
                 selectedTeamMembers.map((member) => (
                   <MenuItem key={member.uuid} value={member.uuid.toString()}>
@@ -215,7 +207,7 @@ export default function CreateTaskDialog({
           variant="contained"
           disabled={!title || !teamId || !priorityId}
         >
-          Create Task
+          {isLoading ? "Creating..." : "Create Task"}
         </Button>
       </DialogActions>
     </Dialog>

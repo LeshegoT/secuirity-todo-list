@@ -94,7 +94,7 @@ async function handleResponse<T>(response: Response): Promise<T> {
     const error = new Error(errorMessage) as any;
     error.response = {
       status: response.status,
-      data: data
+      data: data,
     };
     if (response.status === 401) {
       sessionStorage.removeItem("token");
@@ -210,7 +210,6 @@ class ApiService {
     });
   }
 
-  // User Management Methods
   async getUsers(): Promise<ApiResponse<UserManagement[]>> {
     return this.fetchWrapper("/users", {
       method: "GET",
@@ -272,9 +271,10 @@ class ApiService {
     );
   }
 
-  async createTeam(
-    teamData: { name: string; members: { uuid: string; name: string }[] }
-  ): Promise<DataResponse<Team>> {
+  async createTeam(teamData: {
+    name: string;
+    members: { uuid: string; name: string }[];
+  }): Promise<DataResponse<Team>> {
     return this.fetchWrapper("/teams", {
       method: "POST",
       body: JSON.stringify({
@@ -305,28 +305,61 @@ class ApiService {
     });
   }
 
-  async getTodoCountsByPriority(teamId: number): Promise<TodoCountByPriority[] | Error> {
+  async updateTask(
+    todoId: number,
+    payload: {
+      title?: string;
+      description?: string;
+      assignedToUuid: string | null;
+      statusId?: number;
+      priorityId?: number;
+      isActive?: boolean;
+      lastModifiedBy: string;
+    }
+  ): Promise<DataResponse<{ createdTodo: Todo }>> {
+    return this.fetchWrapper(`/todos/${todoId}`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async updateTeam(
+    teamId: number,
+    membersToAdd: string[],
+    membersToRemove: string[]
+  ): Promise<DataResponse<{ createdTodo: Todo }>> {
+    return this.fetchWrapper(`/teams/${teamId}`, {
+      method: "PATCH",
+      body: JSON.stringify({  membersToAdd, membersToRemove }),
+    });
+  }
+
+  async getTodoCountsByPriority(
+    teamId: number
+  ): Promise<TodoCountByPriority[] | Error> {
     return this.fetchWrapper(`/todos/counts-by-priority?teamId=${teamId}`, {
       method: "GET",
     });
   }
 
-  async getTodoCountsByStatus(teamId: number): Promise<TodoCountByStatus[] | Error> {
+  async getTodoCountsByStatus(
+    teamId: number
+  ): Promise<TodoCountByStatus[] | Error> {
     return this.fetchWrapper(`/todos/counts-by-status?teamId=${teamId}`, {
       method: "GET",
-    })
+    });
   }
 
   async getTodosByPriority(teamId: number): Promise<TodosByPriority[] | Error> {
     return this.fetchWrapper(`/todos/by-priority?teamId=${teamId}`, {
       method: "GET",
-    })
+    });
   }
 
   async getTodosByStatus(teamId: number): Promise<TodosByStatus[] | Error> {
     return this.fetchWrapper(`/todos/by-status?teamId=${teamId}`, {
       method: "GET",
-    })
+    });
   }
 
   async getTodoChanges(todoId: number, startDate?: string, endDate?: string): Promise<TodoAuditLog[] | Error> {
@@ -348,9 +381,8 @@ class ApiService {
 
     return this.fetchWrapper(url, {
       method: "GET",
-    })
+    });
   }
 }
-
 
 export const apiService = new ApiService();
