@@ -139,6 +139,7 @@ export default function CreateTeamDialog({
           fullWidth
           variant="outlined"
           value={teamName}
+          inputProps={{ maxLength: 50 }}
           onChange={(e) => setTeamName(e.target.value)}
           sx={{ mb: 3 }}
         />

@@ -118,6 +118,7 @@ export default function CreateTaskDialog({
             rows={3}
             fullWidth
             variant="outlined"
+            inputProps={{ maxLength: 255 }}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
           />

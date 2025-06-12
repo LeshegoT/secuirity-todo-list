@@ -23,7 +23,6 @@ const Verify: React.FC = () => {
   const [token, setToken] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [showManualEntry, setShowManualEntry] = useState(false);
 
   const state = location.state as LocationState;
   const registrationData = state?.registrationData;
@@ -116,24 +115,6 @@ const Verify: React.FC = () => {
                   className="border border-gray-200 rounded-lg"
                 />
               </div>
-
-              <button
-                type="button"
-                onClick={() => setShowManualEntry(!showManualEntry)}
-                className="text-sm link-base flex items-center justify-center space-x-1"
-              >
-                <KeyIcon className="icon-small" />
-                <span>Can't scan? Enter code manually</span>
-              </button>
-
-              {showManualEntry && (
-                <div className="mt-4 p-4 bg-gray-50 rounded-md">
-                  <p className="text-sm text-gray-700 mb-2">Manual entry key:</p>
-                  <code className="block text-sm font-mono bg-white p-2 rounded border break-all">
-                    {registrationData.manualEntryKey}
-                  </code>
-                </div>
-              )}
             </div>
           </div>
 
@@ -142,7 +123,7 @@ const Verify: React.FC = () => {
               <p className="font-medium mb-2">Instructions:</p>
               <ol className="list-decimal list-inside space-y-1">
                 <li>Download an authenticator app (Google Authenticator, Authy, etc.)</li>
-                <li>Scan the QR code above or enter the manual key</li>
+                <li>Scan the QR code above</li>
                 <li>Enter the 6-digit code from your app below</li>
               </ol>
             </div>
