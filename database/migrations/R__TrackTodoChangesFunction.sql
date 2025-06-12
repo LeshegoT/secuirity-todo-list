@@ -19,7 +19,7 @@ RETURNS TABLE (
     "assignedToName" VARCHAR,
     "assignedToUuid" UUID,
     "teamId" INT,
-    "teamName" TEXT,
+    "teamName" VARCHAR,
     "teamLeadId" INT,
     "teamLeadEmail" VARCHAR,
     "teamLeadName" VARCHAR,
@@ -28,14 +28,14 @@ RETURNS TABLE (
     "statusName" VARCHAR,
     "priorityId" INT,
     "priorityName" VARCHAR,
-    "description" TEXT,
+    "description" VARCHAR,
     "isActive" BOOLEAN,
     "createdAt" TIMESTAMP,
     "createdBy" INT,
     "createdByEmail" VARCHAR,
     "createdByName" VARCHAR,
     "createdByUuid" UUID,
-    "changesMade" TEXT
+    "changesMade" VARCHAR
 )
 AS $$
 BEGIN
