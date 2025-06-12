@@ -1,5 +1,6 @@
 import express, { Application, Request, Response, NextFunction } from 'express';
 import rateLimit from 'express-rate-limit';
+import helmet from 'helmet';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import registerRoute from './routes/registerRoute.js';
@@ -21,21 +22,30 @@ const __dirname = path.dirname(__filename);
 const app: Application = express();
 
 app.use(express.json({ limit: '10mb' }));
-app.use((req: Request, res: Response, next: NextFunction) => {
-  res.setHeader("Content-Security-Policy",
-    "default-src 'self'; " +
-    "script-src 'self'; " +
-    "style-src 'self' 'unsafe-inline'; " +
-    "img-src 'self' data:; " +
-    "font-src 'self'; " +
-    "connect-src 'self'; " +
-    "frame-src 'none'; " +
-    "object-src 'none'; " +
-    "base-uri 'self'; " +
-    "form-action 'self';"
-  );
-  next();
-});
+
+app.use(helmet());
+
+app.use(helmet.contentSecurityPolicy({
+  directives: {
+    defaultSrc: ["'self'"],
+    scriptSrc: ["'self'"],
+    styleSrc: ["'self'", "'unsafe-inline'"], 
+    imgSrc: ["'self'", "data:"],
+    fontSrc: ["'self'"],
+    connectSrc: ["'self'"],
+    frameSrc: ["'none'"],
+    objectSrc: ["'none'"],
+    baseUri: ["'self'"],
+    formAction: ["'self'"],
+    frameAncestors: ["'none'"],
+  },
+}));
+
+app.use(helmet.referrerPolicy({ policy: "no-referrer" }));
+
+app.use(helmet.ieNoOpen());
+
+app.use(helmet.hidePoweredBy());
 
 app.set('trust proxy', 1);
 

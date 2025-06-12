@@ -86,9 +86,7 @@ router.post(
 
       const responseData: RegisterResponse = {
         uuid: jwtToken,
-        secret: secret.base32,
         qrCode: qrCodeUrl,
-        manualEntryKey: secret.base32
       };
 
       res.status(201).json({ data: responseData });
