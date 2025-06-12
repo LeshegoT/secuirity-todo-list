@@ -41,9 +41,7 @@ export interface LoginResponse {
 
 export interface RegisterResponse {
   uuid: string;
-  secret: string;
   qrCode: string;
-  manualEntryKey: string;
 }
 
 export interface VerifyRequest {

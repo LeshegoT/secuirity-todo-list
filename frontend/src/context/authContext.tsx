@@ -62,8 +62,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     const storedToken = sessionStorage.getItem("token");
 
-    console.log("Stored token:", storedToken);
-
     if (storedToken) {
       // Check if token is expired
       if (isTokenExpired(storedToken)) {
@@ -74,7 +72,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
 
       const decoded = decodeToken(storedToken);
-      console.log("Decoded token:", decoded);
+
 
       if (decoded) {
         setToken(storedToken);

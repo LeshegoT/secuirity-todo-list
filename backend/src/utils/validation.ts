@@ -16,9 +16,6 @@ export const validateEmail = (email: unknown): email is string => {
   
   export const validateUserId = (userId: unknown): userId is string => {
     if (!userId || typeof userId !== 'string') return false;
-    // Simple UUID validation
-    // const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-    // return uuidRegex.test(userId);
     return /^\d+$/.test(userId);
   };
   export function validateUuid(uuid: string): boolean {
@@ -35,7 +32,6 @@ export const validateEmail = (email: unknown): email is string => {
     return str.trim();
   };
   
-  // Custom error classes
   export class ValidationError extends Error {
     constructor(message: string) {
       super(message);

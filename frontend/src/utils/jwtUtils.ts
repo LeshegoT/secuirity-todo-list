@@ -13,10 +13,8 @@ export interface DecodedUser {
 export const decodeToken = (token: string): DecodedUser | null => {
   if (!token) return null;
   try {
-    console.log(jwtDecode<DecodedUser>(token))
     return jwtDecode<DecodedUser>(token);
   } catch (e) {
-    console.error("Invalid token", e);
     return null;
   }
 };

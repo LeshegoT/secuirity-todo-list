@@ -26,7 +26,6 @@ interface RegisterResponse {
   uuid: string;
   secret: string;
   qrCode: string;
-  manualEntryKey: string;
 }
 
 interface VerifyResponse {
@@ -81,7 +80,6 @@ async function handleResponse<T>(response: Response): Promise<T> {
       data = await response.json();
     } catch (e) {
       data = {};
-      console.error("Failed to parse JSON response:", e, response);
     }
   } else {
     const text = await response.text();
