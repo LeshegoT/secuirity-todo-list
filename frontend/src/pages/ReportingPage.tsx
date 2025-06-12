@@ -343,9 +343,9 @@ const ReportingPage: React.FC = () => {
               {/*<Grid>*/}
               {/*  <PriorityDistributionChart data={priorityCounts} loading={loadingPriorityCounts} />*/}
               {/*</Grid>*/}
-              {/*<Grid>*/}
-              {/*  <StatusDistributionChart data={statusCounts} loading={loadingStatusCounts} />*/}
-              {/*</Grid>*/}
+              <Grid>
+                <StatusDistributionChart data={statusCounts} loading={loadingStatusCounts} />
+              </Grid>
             </Grid>
           </TabPanel>
 
@@ -411,7 +411,7 @@ const ReportingPage: React.FC = () => {
                 </Paper>
               </Grid>
               <Grid>
-                {selectedTodoId ? (
+                {selectedTodoId && uniqueTodos.length > 0 ? (
                   <TodoChangeHistory todoId={selectedTodoId} />
                 ) : (
                   <Paper sx={{ p: 3 }}>
