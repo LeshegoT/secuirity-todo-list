@@ -44,9 +44,10 @@ const handleCreateTeam = async (teamName: string, selectedUsers: User[]) => {
         <Typography variant="h6" sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           <Group fontSize="small" /> My Teams
         </Typography>
-         <IconButton aria-label="create team" onClick={handleOpenCreateTeam}>
+        {currentUser.roles?.includes("team_lead") &&   <IconButton aria-label="create team" onClick={handleOpenCreateTeam}>
           <Add fontSize="small" />
-        </IconButton>
+        </IconButton> }
+       
       </Box>
       <List>
         <ListItem disablePadding>
