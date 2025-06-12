@@ -1,6 +1,8 @@
+"use client"
+
 import type React from "react"
 import { Box, Paper, Typography } from "@mui/material"
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts"
+import {BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell} from "recharts"
 import type { TodoCountByStatus } from "../types"
 
 interface StatusDistributionChartProps {
@@ -69,9 +71,11 @@ const StatusDistributionChart: React.FC<StatusDistributionChartProps> = ({ data,
             <YAxis allowDecimals={false} />
             <Tooltip formatter={(value) => [`${value} tasks`, "Count"]} />
             <Legend />
-            {chartData.map((entry, index) => (
-              <Bar key={entry.id} dataKey="count" name={entry.name} fill={getStatusColor(entry.id)} barSize={40} />
-            ))}
+            <Bar dataKey="count" name="Task Count" barSize={40}>
+              {chartData.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={getStatusColor(entry.id)} />
+              ))}
+            </Bar>
           </BarChart>
         </ResponsiveContainer>
       </Box>
