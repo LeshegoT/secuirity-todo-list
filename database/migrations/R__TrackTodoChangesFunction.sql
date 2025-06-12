@@ -115,34 +115,34 @@ SELECT
     u_created_by.name AS "createdByName",
     u_created_by.uuid AS "createdByUuid",
 
-    CASE
-        WHEN aa.action_name = 'INSERT' THEN 'TODO created.'
-        WHEN aa.action_name = 'DELETE' THEN 'TODO deleted.'
-        ELSE
-            TRIM(BOTH FROM CONCAT_WS(E'\n',
-                CASE WHEN ac.title IS DISTINCT FROM ac.prev_title THEN
-                    'Title: ' || COALESCE(ac.prev_title, '[NULL]') || ' -> ' || COALESCE(ac.title, '[NULL]')
-                ELSE NULL END,
-                CASE WHEN ac.assigned_to_id IS DISTINCT FROM ac.prev_assigned_to_id THEN
-                    'Assigned To: ' || COALESCE(u_prev_assigned.name, '[Unassigned]') || ' -> ' || COALESCE(u_assigned.name, '[Unassigned]')
-                ELSE NULL END,
-                CASE WHEN ac.team_id IS DISTINCT FROM ac.prev_team_id THEN
-                    'Team: ' || COALESCE(tm_prev.name, '[No Team]') || ' -> ' || COALESCE(tm.name, '[No Team]')
-                ELSE NULL END,
-                CASE WHEN ac.status_id IS DISTINCT FROM ac.prev_status_id THEN
-                    'Status: ' || COALESCE(ts_prev.name, '[NULL]') || ' -> ' || COALESCE(ts.name, '[NULL]')
-                ELSE NULL END,
-                CASE WHEN ac.priority_id IS DISTINCT FROM ac.prev_priority_id THEN
-                    'Priority: ' || COALESCE(tp_prev.name, '[NULL]') || ' -> ' || COALESCE(tp.name, '[NULL]')
-                ELSE NULL END,
-                CASE WHEN ac.description IS DISTINCT FROM ac.prev_description THEN
-                    'Description: ' || COALESCE(ac.prev_description, '[NULL]') || ' -> ' || COALESCE(ac.description, '[NULL]')
-                ELSE NULL END,
-                CASE WHEN ac.is_active IS DISTINCT FROM ac.prev_is_active THEN
-                    'Is Active: ' || COALESCE(ac.prev_is_active::TEXT, '[NULL]') || ' -> ' || COALESCE(ac.is_active::TEXT, '[NULL]')
-                ELSE NULL END
-            ))
-        END AS "changesMade"
+    (CASE
+         WHEN aa.action_name = 'INSERT' THEN 'TODO created.'
+         WHEN aa.action_name = 'DELETE' THEN 'TODO deleted.'
+         ELSE
+             TRIM(BOTH FROM CONCAT_WS(E'\n',
+                  CASE WHEN ac.title IS DISTINCT FROM ac.prev_title THEN
+                      'Title: ' || COALESCE(ac.prev_title, '[NULL]') || ' -> ' || COALESCE(ac.title, '[NULL]')
+                  ELSE NULL END,
+                  CASE WHEN ac.assigned_to_id IS DISTINCT FROM ac.prev_assigned_to_id THEN
+                      'Assigned To: ' || COALESCE(u_prev_assigned.name, '[Unassigned]') || ' -> ' || COALESCE(u_assigned.name, '[Unassigned]')
+                  ELSE NULL END,
+                  CASE WHEN ac.team_id IS DISTINCT FROM ac.prev_team_id THEN
+                      'Team: ' || COALESCE(tm_prev.name, '[No Team]') || ' -> ' || COALESCE(tm.name, '[No Team]')
+                  ELSE NULL END,
+                  CASE WHEN ac.status_id IS DISTINCT FROM ac.prev_status_id THEN
+                      'Status: ' || COALESCE(ts_prev.name, '[NULL]') || ' -> ' || COALESCE(ts.name, '[NULL]')
+                  ELSE NULL END,
+                  CASE WHEN ac.priority_id IS DISTINCT FROM ac.prev_priority_id THEN
+                      'Priority: ' || COALESCE(tp_prev.name, '[NULL]') || ' -> ' || COALESCE(tp.name, '[NULL]')
+                  ELSE NULL END,
+                  CASE WHEN ac.description IS DISTINCT FROM ac.prev_description THEN
+                      'Description: ' || COALESCE(ac.prev_description, '[NULL]') || ' -> ' || COALESCE(ac.description, '[NULL]')
+                  ELSE NULL END,
+                  CASE WHEN ac.is_active IS DISTINCT FROM ac.prev_is_active THEN
+                      'Is Active: ' || COALESCE(ac.prev_is_active::VARCHAR, '[NULL]') || ' -> ' || COALESCE(ac.is_active::VARCHAR, '[NULL]')
+                  ELSE NULL END
+        ))
+        END)::VARCHAR AS "changesMade"
 FROM
     audited_changes ac
         JOIN
